@@ -1,0 +1,155 @@
+:root {
+  --bg-color: #f5efe7; /* Light beige, earthy */
+  --text-color: #2e4a3d; /* Dark forest green */
+  --navbar-bg: #3a5f4a; /* Deep green */
+  --navbar-text: #e8f1e9; /* Pale green */
+  --footer-bg: #3a5f4a; /* Deep green */
+  --footer-text: #e8f1e9; /* Pale green */
+  --cell-bg: #ffffff; /* White for cells */
+  --cell-hover: #d4e4d9; /* Light green hover */
+  --accent-color: #6b8e9f; /* Sky blue */
+  --shadow-color: rgba(46, 74, 61, 0.2); /* Subtle green shadow */
+}
+
+[data-theme="dark"] {
+  --bg-color: #2e2e2e; /* Dark earthy brown */
+  --text-color: #d4e4d9; /* Light green */
+  --navbar-bg: #1a2b22; /* Darker green */
+  --navbar-text: #e8f1e9; /* Pale green */
+  --footer-bg: #1a2b22; /* Darker green */
+  --footer-text: #e8f1e9; /* Pale green */
+  --cell-bg: #3a3a3a; /* Dark gray for cells */
+  --cell-hover: #4a5f4e; /* Darker green hover */
+  --accent-color: #8ab0c3; /* Lighter sky blue */
+  --shadow-color: rgba(212, 228, 217, 0.2); /* Subtle light green shadow */
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: 'Arial', sans-serif;
+  margin: 0;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+main {
+  flex: 1;
+}
+
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background-color: var(--navbar-bg);
+  box-shadow: 0 2px 4px var(--shadow-color);
+}
+
+.navbar a, .navbar select {
+  color: var(--navbar-text);
+  padding: 1rem;
+  text-decoration: none;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  background-color: transparent;
+  border: none;
+  outline: none;
+  cursor: pointer;
+}
+
+.navbar a:hover, .navbar select:hover {
+  background-color: var(--cell-hover);
+  color: var(--navbar-text);
+}
+
+.footer {
+  background-color: var(--footer-bg);
+  color: var(--footer-text);
+  padding: 1rem;
+  text-align: center;
+  width: 100%;
+  box-shadow: 0 -2px 4px var(--shadow-color);
+}
+
+.footer p {
+  margin: 0.25rem 0;
+}
+
+.footer .copyright {
+  font-size: 0.875rem;
+  opacity: 0.8;
+}
+
+.grid-cell {
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+
+.grid-cell:hover {
+  box-shadow: 0 0 8px var(--shadow-color);
+}
+
+/* Ensure grid is centered and fits viewport */
+.container {
+  max-width: 100%;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .container {
+    max-width: 960px;
+  }
+}
+
+.w-fit {
+  width: fit-content;
+}
+
+/* Style for grade selector grid */
+.grid-cell .grade-selector {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 0.5px;
+  padding: 0.5px;
+  background-color: var(--cell-bg);
+  z-index: 50;
+}
+
+.grid-cell .grade-selector div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  transition: background-color 0.2s ease;
+}
+
+.grid-cell .grade-selector div:hover {
+  background-color: var(--cell-hover);
+  cursor: pointer;
+}
+
+/* Category colors for grade levels */
+.grade-9 {
+  background-color: #f8d7da; /* Light red */
+}
+
+.grade-10 {
+  background-color: #d4edda; /* Light green */
+}
+
+.grade-11 {
+  background-color: #cce5ff; /* Light blue */
+}
+
+.grade-12 {
+  background-color: #fff3cd; /* Light yellow */
+}
+
+.other {
+  background-color: #e2e3e5; /* Light gray */
+}

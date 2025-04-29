@@ -11,7 +11,7 @@ Welcome to the **Utah Quarter Credit Model GPA Calculator**, a powerful web-base
 
 - **Flexible Credit Options**:
   - Supports Utah’s 24-credit and 27-credit graduation pathways.
-  - Tracks credits needed for Language Arts (4), Math (4), Science (3), Social Studies (3), Government (2), Art (1), PE (1), CTE (1), Health (1), Career Tech (0.5), Foreign Language (0.5), and Electives (3 or 6).
+  - Tracks credits needed for Language Arts (4), Math (4), Science (3), Social Studies (3), Government (2), Art (1), PE (1), CTE (1), Health (1), Career Tech (0.5), Financial Literacy (0.5), and Electives (3 or 6).
 
 - **Pass Grades (“P” and “P+”)**:
   - Includes “P” (Pass) and “P+” grades that grant 0.25 credits (0.125 for FL/CT slots) without affecting GPA, ideal for pass/fail courses.

@@ -13,12 +13,12 @@ const subjects = ["LA", "MA", "SC", "SS", "GOV", "Art", "PE", "CTE", "HE", "CT1"
 
 // Required credits for graduation (24 credits)
 const requiredCredits24 = {
-  "LA": 4, "MA": 4, "SC": 3, "SS": 3, "GOV": 2, "Art": 1, "PE": 1, "CTE": 1, "HE": 1, "CT": 0.5, "FL": 0.5, "EL": 3.5
+  "LA": 4, "MA": 4, "SC": 3, "SS": 3, "GOV": 2, "Art": 1, "PE": 1, "CTE": 1, "HE": 1, "CT": 0.5, "FL": 0.5, "EL": 3
 };
 
 // Required credits for graduation (27 credits)
 const requiredCredits27 = {
-  "LA": 4, "MA": 4, "SC": 3, "SS": 3, "GOV": 2, "Art": 1, "PE": 1, "CTE": 1, "HE": 1, "CT": 0.5, "FL": 0.5, "EL": 6.5
+  "LA": 4, "MA": 4, "SC": 3, "SS": 3, "GOV": 2, "Art": 1, "PE": 1, "CTE": 1, "HE": 1, "CT": 0.5, "FL": 0.5, "EL": 6
 };
 
 // Credit value per grade (0.25 per grade, 0.125 for FL/CT slots)

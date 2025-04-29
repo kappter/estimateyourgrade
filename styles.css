@@ -76,6 +76,15 @@ main {
   margin: 0.25rem 0;
 }
 
+.footer a {
+  color: var(--footer-text);
+  text-decoration: underline;
+}
+
+.footer a:hover {
+  color: var(--cell-hover);
+}
+
 .footer .copyright {
   font-size: 0.875rem;
   opacity: 0.8;

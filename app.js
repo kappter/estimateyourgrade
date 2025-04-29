@@ -1,8 +1,8 @@
 const grades = [
-  "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", "F", "P", "Clear"
+  "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", "F", "P", "P+", "Clear"
 ];
 
-// GPA mapping (P excluded as it doesn't affect GPA)
+// GPA mapping (P and P+ excluded as they don't affect GPA)
 const gpaMap = {
   "A": 4.0, "A-": 3.7, "B+": 3.3, "B": 3.0, "B-": 2.7, "C+": 2.3,
   "C": 2.0, "C-": 1.7, "D+": 1.3, "D": 1.0, "D-": 0.7, "F": 0.0
@@ -77,7 +77,7 @@ const App = () => {
     setCreditOption(e.target.value);
   };
 
-  const handleGridLayoutChange Helvetica NeueChange = (e) => {
+  const handleGridLayoutChange = (e) => {
     setGridLayout(e.target.value);
   };
 
@@ -126,7 +126,7 @@ const App = () => {
               const creditValue = creditValues[subjects[col]];
               earnedCredits[subject] = (earnedCredits[subject] || 0) + creditValue;
               totalCredits += creditValue;
-              if (grade !== "P") {
+              if (grade !== "P" && grade !== "P+") {
                 totalGPA += gpaMap[grade] * creditValue;
                 totalCourses += creditValue;
               }
@@ -142,7 +142,7 @@ const App = () => {
             const creditValue = creditValues[subjects[col]];
             earnedCredits[subject] = (earnedCredits[subject] || 0) + creditValue;
             totalCredits += creditValue;
-            if (grade !== "P") {
+            if (grade !== "P" && grade !== "P+") {
               totalGPA += gpaMap[grade] * creditValue;
               totalCourses += creditValue;
             }
@@ -362,6 +362,7 @@ const App = () => {
         <p>Total Credits: {totalCredits.toFixed(2)}</p>
         <p>GPA: {gpa}</p>
         <p>Data Source: <a href="https://www.schools.utah.gov/curr/graduationrequirements" target="_blank" rel="noopener noreferrer">Utah State Board of Education Graduation Requirements</a></p>
+        <p className="note">Note: 'P' (Pass) and 'P+' grant credit but do not affect GPA.</p>
         <p className="copyright">© 2025 All Rights Reserved</p>
       </footer>
     </div>

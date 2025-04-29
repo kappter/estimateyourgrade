@@ -8,22 +8,22 @@ const gpaMap = {
   "C": 2.0, "C-": 1.7, "D+": 1.3, "D": 1.0, "D-": 0.7, "F": 0.0
 };
 
-// Subjects by grade level, splitting FL and CT into two 0.5-credit slots each
-const subjects = ["LA", "MA", "SC", "SS", "GOV", "Art", "PE", "CTE", "HE", "CT1", "CT2", "FL1", "FL2", "EL"];
+// Subjects by grade level, with FL as a single slot
+const subjects = ["LA", "MA", "SC", "SS", "GOV", "Art", "PE", "CTE", "HE", "FL", "EL"];
 
 // Required credits for graduation (24 credits)
 const requiredCredits24 = {
-  "LA": 4, "MA": 4, "SC": 3, "SS": 3, "GOV": 2, "Art": 1, "PE": 1, "CTE": 1, "HE": 1, "CT": 0.5, "FL": 0.5, "EL": 3
+  "LA": 4, "MA": 4, "SC": 3, "SS": 3, "GOV": 2, "Art": 1, "PE": 1, "CTE": 1, "HE": 1, "FL": 0.5, "EL": 4
 };
 
 // Required credits for graduation (27 credits)
 const requiredCredits27 = {
-  "LA": 4, "MA": 4, "SC": 3, "SS": 3, "GOV": 2, "Art": 1, "PE": 1, "CTE": 1, "HE": 1, "CT": 0.5, "FL": 0.5, "EL": 6
+  "LA": 4, "MA": 4, "SC": 3, "SS": 3, "GOV": 2, "Art": 1, "PE": 1, "CTE": 1, "HE": 1, "FL": 0.5, "EL": 7
 };
 
-// Credit value per grade (0.25 per grade, 0.125 for FL/CT slots)
+// Credit value per grade (0.25 for all subjects)
 const creditValues = subjects.reduce((acc, subject) => {
-  acc[subject] = subject.includes("FL") || subject.includes("CT") ? 0.125 : 0.25;
+  acc[subject] = 0.25;
   return acc;
 }, {});
 
@@ -122,8 +122,8 @@ const App = () => {
         grid.stacked[gradeLevel].forEach((gradeArray, col) => {
           gradeArray.forEach((grade) => {
             if (grade) {
-              const subject = subjects[col].includes("FL") ? "FL" : subjects[col].includes("CT") ? "CT" : subjects[col];
-              const creditValue = creditValues[subjects[col]];
+              const subject = subjects[col];
+              const creditValue = creditValues[subject];
               earnedCredits[subject] = (earnedCredits[subject] || 0) + creditValue;
               totalCredits += creditValue;
               if (grade !== "P" && grade !== "P+") {
@@ -138,8 +138,8 @@ const App = () => {
       Object.keys(grid.rowBased).forEach((rowKey) => {
         grid.rowBased[rowKey].forEach((grade, col) => {
           if (grade) {
-            const subject = subjects[col].includes("FL") ? "FL" : subjects[col].includes("CT") ? "CT" : subjects[col];
-            const creditValue = creditValues[subjects[col]];
+            const subject = subjects[col];
+            const creditValue = creditValues[subject];
             earnedCredits[subject] = (earnedCredits[subject] || 0) + creditValue;
             totalCredits += creditValue;
             if (grade !== "P" && grade !== "P+") {
@@ -277,7 +277,7 @@ const App = () => {
           Utah Quarter Credit Model GPA Calculator
         </h1>
         <div className="flex justify-center mb-8">
-          <div className={`grid grid-cols-[60px_repeat(14,60px)] gap-1 w-fit ${gridLayout === "rowBased" ? "grid-row-based" : ""}`}>
+          <div className={`grid grid-cols-[60px_repeat(${subjects.length},60px)] gap-1 w-fit ${gridLayout === "rowBased" ? "grid-row-based" : ""}`}>
             <div className="bg-blue-500 text-white p-2 font-bold">Grade</div>
             {subjects.map((subject, i) => (
               <div key={i} className="bg-blue-500 text-white p-2 text-center font-bold text-xs">

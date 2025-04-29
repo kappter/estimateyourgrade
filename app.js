@@ -8,34 +8,34 @@ const gpaMap = {
   "C": 2.0, "C-": 1.7, "D+": 1.3, "D": 1.0, "D-": 0.7, "F": 0.0
 };
 
-// Subjects by grade level and category
-const subjects = {
-  "9th": ["LA", "MA", "SC", "SS", "GOV", "Art", "PE", "CTE", "HE", "CT", "FL", "EL"],
-  "10th": ["LA", "MA", "SC", "SS", "GOV", "Art", "PE", "CTE", "HE", "CT", "FL", "EL"],
-  "11th": ["LA", "MA", "SC", "SS", "GOV", "Art", "PE", "CTE", "HE", "CT", "FL", "EL"],
-  "12th": ["LA", "MA", "SC", "SS", "GOV", "Art", "PE", "CTE", "HE", "CT", "FL", "EL"],
-  "Other": ["Elective", "Elective", "Elective", "Elective", "Elective", "Elective", "Elective", "Elective", "Elective", "Elective", "Elective", "Elective"]
-};
+// Subjects by grade level, splitting FL and CT into two 0.5-credit slots each
+const subjects = ["LA", "MA", "SC", "SS", "GOV", "Art", "PE", "CTE", "HE", "CT1", "CT2", "FL1", "FL2", "EL"];
 
 // Required credits for graduation (24 credits)
 const requiredCredits24 = {
-  "LA": 4, "MA": 4, "SC": 3, "SS": 3, "GOV": 2, "Art": 1, "PE": 1, "CTE": 1, "HE": 1, "CT": 1, "FL": 1, "EL": 2
+  "LA": 4, "MA": 4, "SC": 3, "SS": 3, "GOV": 2, "Art": 1, "PE": 1, "CTE": 1, "HE": 1, "CT": 0.5, "FL": 0.5, "EL": 3.5
 };
 
 // Required credits for graduation (27 credits)
 const requiredCredits27 = {
-  "LA": 4, "MA": 4, "SC": 3, "SS": 3, "GOV": 2, "Art": 1, "PE": 1, "CTE": 1, "HE": 1, "CT": 1, "FL": 1, "EL": 5
+  "LA": 4, "MA": 4, "SC": 3, "SS": 3, "GOV": 2, "Art": 1, "PE": 1, "CTE": 1, "HE": 1, "CT": 0.5, "FL": 0.5, "EL": 6.5
 };
+
+// Credit value per subject (FL and CT are 0.5 credits each, others are 1 credit)
+const creditValues = subjects.reduce((acc, subject) => {
+  acc[subject] = subject.includes("FL") || subject.includes("CT") ? 0.5 : 1;
+  return acc;
+}, {});
 
 const App = () => {
   const [theme, setTheme] = React.useState(localStorage.getItem('theme') || 'light');
   const [creditOption, setCreditOption] = React.useState("24");
   const [grid, setGrid] = React.useState({
-    "9th": Array(subjects["9th"].length).fill(""),
-    "10th": Array(subjects["10th"].length).fill(""),
-    "11th": Array(subjects["11th"].length).fill(""),
-    "12th": Array(subjects["12th"].length).fill(""),
-    "Other": Array(subjects["Other"].length).fill("")
+    "9th": Array(subjects.length).fill(""),
+    "10th": Array(subjects.length).fill(""),
+    "11th": Array(subjects.length).fill(""),
+    "12th": Array(subjects.length).fill(""),
+    "Other": Array(subjects.length).fill("")
   });
   const [activeCell, setActiveCell] = React.useState(null);
 
@@ -78,11 +78,12 @@ const App = () => {
     Object.keys(grid).forEach((gradeLevel) => {
       grid[gradeLevel].forEach((grade, col) => {
         if (grade) {
-          const subject = subjects[gradeLevel][col];
-          earnedCredits[subject] = (earnedCredits[subject] || 0) + 1;
-          totalCredits += 1;
-          totalGPA += gpaMap[grade];
-          totalCourses += 1;
+          const subject = subjects[col].includes("FL") ? "FL" : subjects[col].includes("CT") ? "CT" : subjects[col];
+          const creditValue = creditValues[subjects[col]];
+          earnedCredits[subject] = (earnedCredits[subject] || 0) + creditValue;
+          totalCredits += creditValue;
+          totalGPA += gpaMap[grade] * creditValue;
+          totalCourses += creditValue;
         }
       });
     });
@@ -110,11 +111,11 @@ const App = () => {
             <option value="27">27 Credits</option>
           </select>
           <a href="#" onClick={() => setGrid({
-            "9th": Array(subjects["9th"].length).fill(""),
-            "10th": Array(subjects["10th"].length).fill(""),
-            "11th": Array(subjects["11th"].length).fill(""),
-            "12th": Array(subjects["12th"].length).fill(""),
-            "Other": Array(subjects["Other"].length).fill("")
+            "9th": Array(subjects.length).fill(""),
+            "10th": Array(subjects.length).fill(""),
+            "11th": Array(subjects.length).fill(""),
+            "12th": Array(subjects.length).fill(""),
+            "Other": Array(subjects.length).fill("")
           })} className="text-lg">Clear Grid</a>
           <a href="#" onClick={toggleTheme} className="text-lg">
             {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
@@ -126,15 +127,15 @@ const App = () => {
           Utah Credit Model GPA Calculator
         </h1>
         <div className="flex justify-center mb-8">
-          <div className="grid grid-cols-[60px_repeat(12,60px)] gap-1 w-fit">
+          <div className="grid grid-cols-[60px_repeat(14,60px)] gap-1 w-fit">
             <div className="bg-blue-500 text-white p-2 font-bold">Grade</div>
-            {subjects["9th"].map((subject, i) => (
+            {subjects.map((subject, i) => (
               <div key={i} className="bg-blue-500 text-white p-2 text-center font-bold text-xs">
                 {subject}
               </div>
             ))}
 
-            {Object.keys(subjects).map((gradeLevel) => (
+            {Object.keys(grid).map((gradeLevel) => (
               <React.Fragment key={gradeLevel}>
                 <div className={`p-2 font-semibold flex items-center text-sm grade-${gradeLevel.toLowerCase().replace(/\dth/, '')}`}>
                   {gradeLevel}
@@ -169,9 +170,10 @@ const App = () => {
         </div>
       </main>
       <footer className="footer">
-        <p>Credits Needed to Graduate: {creditsNeeded}</p>
-        <p>Total Credits: {totalCredits}</p>
+        <p>Credits Needed to Graduate: {creditsNeeded.toFixed(2)}</p>
+        <p>Total Credits: {totalCredits.toFixed(2)}</p>
         <p>GPA: {gpa}</p>
+        <p>Data Source: <a href="https://www.schools.utah.gov/curr/graduationrequirements" target="_blank" rel="noopener noreferrer">Utah State Board of Education Graduation Requirements</a></p>
         <p className="copyright">© 2025 All Rights Reserved</p>
       </footer>
     </div>

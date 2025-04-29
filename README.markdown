@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The Utah Quarter Credit Model GPA Calculator is a web application designed to help high school students plan and track their academic progress toward graduation and college admission goals. Built with React, Tailwind CSS, and a custom Earth-style theme, the app allows users to assign letter grades to each quarter of their subjects across grades 9th to 12th, plus additional electives. It calculates total credits earned, credits needed to graduate, and the student’s GPA in real-time.
+The Utah Quarter Credit Model [GPA Calculator](https://kappter.github.io/estimateyourgrade/#) is a web application designed to help high school students plan and track their academic progress toward graduation and college admission goals. Built with React, Tailwind CSS, and a custom Earth-style theme, the app allows users to assign letter grades to each quarter of their subjects across grades 9th to 12th, plus additional electives. It calculates total credits earned, credits needed to graduate, and the student’s GPA in real-time.
 
 A key goal of this app is to answer critical questions about academic recovery, such as: **"If I get really bad grades in 9th grade, is it even possible to get a 3.5 GPA required by some colleges?"** By simulating different grade scenarios, students can explore whether they can recover from a poor start and still meet college GPA requirements.
 

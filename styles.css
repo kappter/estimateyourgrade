@@ -173,6 +173,11 @@ main {
   background-color: #e2e3e5; /* Light gray */
 }
 
+/* Smaller row height for row-based model */
+.grid-row-based .grid-cell {
+  height: 30px;
+}
+
 /* Print-specific styles */
 @media print {
   @page {
@@ -243,11 +248,11 @@ main {
   }
 
   /* Apply grade level colors */
-  .grid > div:nth-child(n+16):nth-child(-n+30) { background-color: #f8d7da; }
-  .grid > div:nth-child(n+31):nth-child(-n+45) { background-color: #d4edda; }
-  .grid > div:nth-child(n+46):nth-child(-n+60) { background-color: #cce5ff; }
-  .grid > div:nth-child(n+61):nth-child(-n+75) { background-color: #fff3cd; }
-  .grid > div:nth-child(n+76) { background-color: #e2e3e5; }
+  .grid > div.grade-9 { background-color: #f8d7da; }
+  .grid > div.grade-10 { background-color: #d4edda; }
+  .grid > div.grade-11 { background-color: #cce5ff; }
+  .grid > div.grade-12 { background-color: #fff3cd; }
+  .grid > div.grade-other { background-color: #e2e3e5; }
 
   /* Style for stacked grades in print */
   .grid > div.grade-stack {

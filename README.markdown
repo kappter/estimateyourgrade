@@ -1,127 +1,121 @@
 # Utah Quarter Credit Model GPA Calculator
 
-## Purpose
-
-The Utah Quarter Credit Model [GPA Calculator](https://kappter.github.io/estimateyourgrade/#) is a web application designed to help high school students plan and track their academic progress toward graduation and college admission goals. Built with React, Tailwind CSS, and a custom Earth-style theme, the app allows users to assign letter grades to each quarter of their subjects across grades 9th to 12th, plus additional electives. It calculates total credits earned, credits needed to graduate, and the student’s GPA in real-time.
-
-A key goal of this app is to answer critical questions about academic recovery, such as: **"If I get really bad grades in 9th grade, is it even possible to get a 3.5 GPA required by some colleges?"** By simulating different grade scenarios, students can explore whether they can recover from a poor start and still meet college GPA requirements.
-
-The app supports two credit models:
-- **24 Credits**: Standard Utah graduation requirement (e.g., 4 LA, 4 MA, 3 SC, etc.).
-- **27 Credits**: Adds 3 more elective credits, totaling 5 electives.
+Welcome to the **Utah Quarter Credit Model GPA Calculator**, a powerful web-based tool designed to help students, educators, and parents plan and predict academic outcomes based on Utah’s high school graduation requirements. Hosted at [kappter.github.io/estimateyourgrade](https://kappter.github.io/estimateyourgrade/), this interactive application allows users to input grades, visualize credit progress, and calculate GPAs with precision, making it an essential resource for academic planning.
 
 ## Features
 
-- **Quarter Credit System**: Each subject per grade level is divided into 4 quarters (Q1–Q4), each worth 0.25 credits.
-- **Interactive Grade Selection**: Hover over a cell to display a 4x4 grid of letter grades (A, A-, B+, etc.) and click to assign a grade.
-- **Credit Toggle**: Switch between 24 and 27 credit requirements using a dropdown in the navigation bar.
-- **Real-Time Calculations**: Displays total credits earned, credits needed to graduate, and GPA.
-- **Themed Interface**: Earth-style theme with light and dark modes, inspired by natural colors (greens, browns, blues).
-- **Grade-Level Coloring**: Visual distinction for each grade level (e.g., 9th grade in light red, 10th in light green).
+- **Dual Grid Layouts**:
+  - **Stacked Grid**: Enter up to four 0.25-credit grades per subject per grade level (9th–12th, Other), ideal for tracking multiple courses in a single category (e.g., four English classes in 9th grade).
+  - **Row-Based Grid**: Assign one grade per row (four rows per grade level, e.g., “9th-1” to “9th-4”), perfect for detailed, semester-by-semester planning.
+  - Switch seamlessly between layouts to suit your planning style.
 
-## Setup Instructions
+- **Flexible Credit Options**:
+  - Supports Utah’s 24-credit and 27-credit graduation pathways.
+  - Tracks credits needed for Language Arts (4), Math (4), Science (3), Social Studies (3), Government (2), Art (1), PE (1), CTE (1), Health (1), Career Tech (0.5), Foreign Language (0.5), and Electives (3 or 6).
 
-1. **Clone the Repository**:
+- **Pass Grades (“P” and “P+”)**:
+  - Includes “P” (Pass) and “P+” grades that grant 0.25 credits (0.125 for FL/CT slots) without affecting GPA, ideal for pass/fail courses.
+  - Clear footer note: “Note: ‘P’ (Pass) and ‘P+’ grant credit but do not affect GPA.”
+
+- **Real-Time GPA and Credit Calculations**:
+  - Instantly calculates GPA (excluding “P” and “P+” grades), total credits earned, and credits needed to graduate.
+  - Updates dynamically as grades are entered, providing immediate feedback.
+
+- **Clear Cell Functionality**:
+  - Reset individual cells using the “Clear” option in the grade selector, allowing easy corrections in both grid layouts.
+
+- **Print Support**:
+  - Generate a landscape-oriented, printer-friendly version of the grid (stacked or row-based) with grade-level colors, credits, and GPA.
+  - Includes a timestamped footer for record-keeping (e.g., “Printed on: 04/29/2025, 07:21:00 AM”).
+
+- **Earth-Themed Design with Dark Mode**:
+  - Features an intuitive, Earth-inspired UI with light and dark mode toggle (🌙/☀️) for comfortable viewing.
+  - Color-coded grade levels (e.g., 9th: light red, 10th: light green) enhance readability.
+
+- **Responsive and Accessible**:
+  - Built with React, Tailwind CSS, and custom CSS for a responsive layout that works on desktops, tablets, and mobile devices.
+  - Hover-based grade selectors and clear navigation ensure ease of use.
+
+## Benefits
+
+- **Predict Future Outcomes**: Students can experiment with grade scenarios to see how current and future performance impacts GPA and graduation progress, fostering proactive planning.
+- **Visualize Progress**: The dual grid layouts and real-time stats provide a clear visual representation of credits earned versus needed, helping users stay on track.
+- **Support for Diverse Pathways**: The 24/27 credit options and pass grades accommodate varied academic plans, including pass/fail courses and elective-heavy schedules.
+- **Empower Educators and Parents**: Teachers can use the tool to advise students, while parents can monitor progress and set realistic goals with their children.
+- **Time-Saving and Accurate**: Automates complex GPA and credit calculations, reducing errors and freeing up time for strategic academic decisions.
+- **Portable Records**: The print feature creates professional, shareable summaries for counseling sessions, college applications, or personal records.
+- **Engaging and User-Friendly**: The Earth-themed design, dark mode, and intuitive controls make academic planning enjoyable and accessible to all users.
+
+## Who It Helps
+
+- **High School Students**: Plan courses, predict GPA, and ensure they meet Utah’s 24 or 27 credit requirements for graduation. Experiment with “what-if” scenarios to optimize academic performance.
+- **Parents**: Gain insight into their child’s progress, set achievable goals, and collaborate with counselors to support graduation readiness.
+- **Educators and Counselors**: Assist students in course selection, monitor credit accumulation, and provide data-driven advice using printed reports.
+- **Homeschool Families**: Track credits and GPA for customized curricula, ensuring compliance with Utah’s graduation standards.
+- **College-Bound Students**: Use accurate GPA calculations and credit summaries to strengthen applications and scholarship opportunities.
+
+## Getting Started
+
+1. **Access the App**:
+   - Visit [kappter.github.io/estimateyourgrade](https://kappter.github.io/estimateyourgrade/) to start using the calculator instantly.
+
+2. **Clone the Repository** (for developers):
    ```bash
-   git clone https://github.com/your-username/utah-quarter-credit-gpa-calculator.git
-   cd utah-quarter-credit-gpa-calculator
+   git clone https://github.com/kappter/estimateyourgrade.git
+   cd estimateyourgrade
    ```
 
-2. **Serve the Application**:
-   Since this is a static web app, you can serve it using a simple HTTP server. For example, using Python:
-   ```bash
-   python -m http.server 8000
-   ```
-   Alternatively, you can open `index.html` directly in a browser, but some features may require a server due to CORS restrictions.
+3. **Run Locally**:
+   - Open `index.html` in a browser (no server required for basic use).
+   - For development, use a local server (e.g., `npx serve`) to avoid CORS issues with print functionality.
 
-3. **Access the App**:
-   Open your browser and navigate to `http://localhost:8000`.
+4. **Customize or Contribute**:
+   - Edit `app.js` to modify grades, credit requirements, or logic.
+   - Update `styles.css` for custom theming.
+   - Submit pull requests or issues on [GitHub](https://github.com/kappter/estimateyourgrade).
 
-## Usage Guide
+## Project Structure
 
-1. **Select Credit Model**:
-   - Use the dropdown in the navigation bar to choose between "24 Credits" or "27 Credits".
-   - The 27-credit option adds 3 more elective credits (visible in the "Other" row).
+```
+estimateyourgrade/
+├── index.html        # Main HTML file
+├── styles.css        # Custom CSS for styling
+├── app.js            # React-based JavaScript logic
+└── README.md         # This file
+```
 
-2. **Assign Grades**:
-   - The grid is organized by grade level (9th, 10th, 11th, 12th, Other) and subjects (LA, MA, SC, etc.).
-   - Each subject has 4 columns (Q1–Q4), representing the quarters of the school year.
-   - Hover over a cell to display a 4x4 grid of letter grades (A, A-, B+, etc.).
-   - Click a grade to assign it to that quarter.
+## Dependencies
 
-3. **Monitor Progress**:
-   - The footer updates in real-time to show:
-     - **Credits Needed to Graduate**: How many more credits you need to meet the selected credit requirement.
-     - **Total Credits**: Sum of credits earned (0.25 per quarter with a grade).
-     - **GPA**: Calculated based on a 4.0 scale (e.g., A = 4.0, A- = 3.7, B+ = 3.3, etc.).
+- **React 18.2.0**: For dynamic UI components.
+- **Tailwind CSS (CDN)**: For responsive styling.
+- **Babel Standalone**: For in-browser JSX transformation.
 
-4. **Clear the Grid**:
-   - Click "Clear Grid" in the navigation bar to reset all grades.
+*Note*: For production, consider installing Tailwind via npm and precompiling JSX with a build tool like Vite.
 
-5. **Toggle Theme**:
-   - Click the "Dark Mode" or "Light Mode" button to switch between themes.
+## Data Source
 
-## Example: Can I Recover from Bad Grades in 9th Grade to Reach a 3.5 GPA?
-
-Let’s explore the question: **"If I get really bad grades in 9th grade, is it even possible to get a 3.5 GPA required by some colleges?"**
-
-### Scenario Setup
-- **Credit Model**: 24 credits (standard Utah requirement).
-- **9th Grade Performance**: Assume "really bad grades" means mostly D’s (1.0 GPA) across all subjects.
-- **Subjects**: 12 subjects (LA, MA, SC, SS, GOV, Art, PE, CTE, HE, CT, FL, EL), each with 4 quarters.
-- **Total Quarters in 9th Grade**: 12 subjects × 4 quarters = 48 quarters.
-- **Remaining Years**: 10th, 11th, 12th, and "Other" (electives), each with 12 subjects × 4 quarters = 48 quarters, totaling 48 × 4 = 192 quarters.
-
-### Step 1: 9th Grade Grades
-- Assign D (1.0) to all 48 quarters in 9th grade.
-- Total grade points from 9th grade: 48 quarters × 1.0 = 48 points.
-- Credits earned: 48 quarters × 0.25 credits = 12 credits.
-
-### Step 2: Calculate Required GPA for Remaining Years
-- **Total Quarters Across All Years**: 48 (9th) + 192 (10th–Other) = 240 quarters.
-- **Target GPA**: 3.5.
-- **Total Grade Points Needed**: 3.5 × 240 quarters = 840 points.
-- **Points Already Earned**: 48 points (from 9th grade).
-- **Points Needed from Remaining Years**: 840 – 48 = 792 points.
-- **Average GPA Needed for Remaining Quarters**: 792 points ÷ 192 quarters ≈ 4.125.
-
-### Analysis
-- An average GPA of 4.125 across 10th, 11th, 12th, and electives is not possible since the maximum GPA per quarter is 4.0 (an A).
-- Let’s adjust the target to see what’s feasible. To achieve a 3.5 GPA overall, you’d need to maximize your grades in the remaining years.
-
-### Step 3: Maximize Grades in Remaining Years
-- Assign A (4.0) to all 192 quarters in 10th, 11th, 12th, and Other.
-- Total grade points from remaining years: 192 quarters × 4.0 = 768 points.
-- Total grade points overall: 48 (9th) + 768 (remaining) = 816 points.
-- **Final GPA**: 816 points ÷ 240 quarters = 3.4.
-
-### Conclusion
-If you get D’s in all quarters of 9th grade, even getting straight A’s in all remaining quarters (10th through 12th and electives) results in a GPA of 3.4, which is just below the 3.5 target. This shows that recovering to a 3.5 GPA is extremely challenging but not impossible if you aim for a slightly lower target or if the college accepts a rounded GPA. For example:
-- A mix of mostly A’s (4.0) and a few A-’s (3.7) might get you closer to 3.5.
-- Using the 27-credit model (adding 3 more elective credits, or 12 quarters) gives more opportunities to earn high grades and slightly boosts your GPA.
-
-### Try It Yourself
-Use the app to experiment with different grade scenarios:
-1. Set the credit model to "24 Credits".
-2. Assign D’s to all quarters in 9th grade.
-3. Try different grades (e.g., all A’s, or a mix of A’s and A-’s) for 10th, 11th, and 12th grades.
-4. Check the GPA in the footer to see if you can reach 3.5.
-
-## File Structure
-
-- `index.html`: Entry point of the app, includes necessary scripts and links to styles.
-- `styles.css`: Custom CSS with Earth-style theme, grid styling, and grade selector cluster effect.
-- `app.js`: React application logic, including the grid, grade selection, credit toggle, and calculations.
+Credit requirements are based on the [Utah State Board of Education Graduation Requirements](https://www.schools.utah.gov/curr/graduationrequirements).
 
 ## Contributing
 
-Feel free to fork this repository and submit pull requests for improvements or bug fixes. For major changes, please open an issue first to discuss your ideas.
+We welcome contributions! To get started:
+1. Fork the repository.
+2. Create a feature branch (`git checkout -b feature-name`).
+3. Commit changes (`git commit -m "Add feature"`).
+4. Push to the branch (`git push origin feature-name`).
+5. Open a pull request.
+
+Please report bugs or suggest features via [GitHub Issues](https://github.com/kappter/estimateyourgrade/issues).
 
 ## License
 
-This project is licensed under the MIT License. See the `LICENSE` file for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
-- Inspired by the [Utah 24 Credit Model](https://kappter.github.io/MrK/Test/mind/web_gpa_24/GPA_Web_02.pde).
-- Built with React, Tailwind CSS, and a custom Earth-style theme.
+- Built with ❤️ by [kappter](https://github.com/kappter).
+- Inspired by the need for accessible, predictive tools to empower Utah students.
+
+---
+
+Plan your academic future with confidence using the Utah Quarter Credit Model GPA Calculator!

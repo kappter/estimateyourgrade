@@ -1,292 +1,173 @@
 :root {
-  --bg-color: #f5efe7; /* Light beige, earthy */
-  --text-color: #2e4a3d; /* Dark forest green */
-  --navbar-bg: #3a5f4a; /* Deep green */
-  --navbar-text: #e8f1e9; /* Pale green */
-  --footer-bg: #3a5f4a; /* Deep green */
-  --footer-text: #e8f1e9; /* Pale green */
-  --cell-bg: #ffffff; /* White for cells */
-  --cell-hover: #d4e4d9; /* Light green hover */
-  --accent-color: #6b8e9f; /* Sky blue */
-  --shadow-color: rgba(46, 74, 61, 0.2); /* Subtle green shadow */
+  --cell-bg: #fff;
+  --cell-hover: #e5e7eb;
+  --text-color: #000;
 }
 
 [data-theme="dark"] {
-  --bg-color: #2e2e2e; /* Dark earthy brown */
-  --text-color: #d4e4d9; /* Light green */
-  --navbar-bg: #1a2b22; /* Darker green */
-  --navbar-text: #e8f1e9; /* Pale green */
-  --footer-bg: #1a2b22; /* Darker green */
-  --footer-text: #e8f1e9; /* Pale green */
-  --cell-bg: #3a3a3a; /* Dark gray for cells */
-  --cell-hover: #4a5f4e; /* Darker green hover */
-  --accent-color: #8ab0c3; /* Lighter sky blue */
-  --shadow-color: rgba(212, 228, 217, 0.2); /* Subtle light green shadow */
+  --cell-bg: #1f2937;
+  --cell-hover: #374151;
+  --text-color: #fff;
 }
 
 body {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background-color: var(--bg-color);
+  font-family: Arial, sans-serif;
+  background-color: var(--cell-bg);
   color: var(--text-color);
-  font-family: 'Arial', sans-serif;
-  margin: 0;
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-main {
-  flex: 1;
 }
 
 .navbar {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  background-color: var(--navbar-bg);
-  box-shadow: 0 2px 4px var(--shadow-color);
+  background-color: #1e40af;
+  padding: 1rem;
 }
 
 .navbar a, .navbar select {
-  color: var(--navbar-text);
-  padding: 1rem;
-  text-decoration: none;
-  transition: background-color 0.3s ease, color 0.3s ease;
-  background-color: transparent;
-  border: none;
-  outline: none;
-  cursor: pointer;
+  color: white;
 }
 
-.navbar a:hover, .navbar select:hover {
-  background-color: var(--cell-hover);
-  color: var(--navbar-text);
+.grid {
+  display: grid;
+  border: 1px solid #ccc;
 }
 
-.footer {
-  background-color: var(--footer-bg);
-  color: var(--footer-text);
-  padding: 1rem;
-  text-align: center;
-  width: 100%;
-  box-shadow: 0 -2px 4px var(--shadow-color);
+/* Wrap grid in a scrollable container */
+.grid-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  max-width: 100%;
+  margin: 0 auto;
+  scrollbar-width: thin; /* Firefox */
 }
 
-.footer p {
-  margin: 0.25rem 0;
+/* Ensure grid doesn't shrink below a reasonable width */
+.grid {
+  min-width: 600px; /* Slightly less than 720px to allow some flexibility */
 }
 
-.footer a {
-  color: var(--footer-text);
-  text-decoration: underline;
+/* Adjust column widths for better mobile fit */
+.grid > div {
+  min-width: 50px; /* Reduced from 60px */
+  box-sizing: border-box;
 }
 
-.footer a:hover {
-  color: var(--cell-hover);
+/* Sticky Grade column */
+.grid > div:first-child {
+  position: sticky;
+  left: 0;
+  background-color: var(--cell-bg);
+  z-index: 10;
+  border-right: 2px solid #ccc; /* Visual separation */
 }
 
-.footer .copyright, .footer .note {
-  font-size: 0.875rem;
-  opacity: 0.8;
-}
+/* Grade-specific background colors */
+.grade-9th { background-color: rgba(255, 0, 0, 0.1); }
+.grade-10th { background-color: rgba(0, 255, 0, 0.1); }
+.grade-11th { background-color: rgba(0, 0, 255, 0.1); }
+.grade-12th { background-color: rgba(255, 255, 0, 0.1); }
+.grade-other { background-color: rgba(128, 128, 128, 0.1); }
 
 .grid-cell {
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
-  position: relative;
+  background-color: var(--cell-bg);
 }
 
 .grid-cell:hover {
-  box-shadow: 0 0 8px var(--shadow-color);
-}
-
-/* Ensure grid is centered and fits viewport */
-.container {
-  max-width: 100%;
-  padding-left: 1rem;
-  padding-right: 1rem;
-}
-
-@media (min-width: 1024px) {
-  .container {
-    max-width: 960px;
-  }
-}
-
-.w-fit {
-  width: fit-content;
-}
-
-/* Style for grade selector grid */
-.grid-cell .grade-selector {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(4, 1fr);
-  gap: 0.5px;
-  padding: 0.5px;
-  background-color: var(--cell-bg);
-  z-index: 50;
-}
-
-.grid-cell .grade-selector div {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  transition: background-color 0.2s ease;
-}
-
-.grid-cell .grade-selector div:hover {
   background-color: var(--cell-hover);
-  cursor: pointer;
 }
 
-/* Style for stacked grades */
-.grid-cell .grade-stack {
+.grade-stack {
   display: flex;
   flex-direction: column;
+  gap: 2px;
   align-items: center;
   justify-content: center;
+  height: 100%;
+}
+
+.grade-stack span {
   font-size: 10px;
   line-height: 1.2;
 }
 
-/* Category colors for grade levels */
-.grade-9 {
-  background-color: #f8d7da; /* Light red */
+.grade-selector {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  width: 100%;
+  height: 100%;
 }
 
-.grade-10 {
-  background-color: #d4edda; /* Light green */
+.footer {
+  text-align: center;
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: var(--cell-bg);
 }
 
-.grade-11 {
-  background-color: #cce5ff; /* Light blue */
+.footer p {
+  margin: 0.5rem 0;
 }
 
-.grade-12 {
-  background-color: #fff3cd; /* Light yellow */
+.note {
+  font-size: 0.9rem;
+  font-style: italic;
 }
 
-.grade-other {
-  background-color: #e2e3e5; /* Light gray */
+.copyright {
+  font-size: 0.8rem;
+  color: #666;
 }
 
-/* Smaller row height for row-based model */
-.grid-row-based .grid-cell {
-  height: 30px;
-}
-
-/* Print-specific styles */
+/* Print styles */
 @media print {
-  @page {
-    size: landscape;
-    margin: 0;
-  }
-
-  body {
-    background-color: #ffffff;
-    color: #2e4a3d;
-    font-family: 'Arial', sans-serif;
-    margin: 0;
-    padding: 0;
-  }
-
   .navbar, .footer {
     display: none;
   }
 
-  main {
-    margin: 0;
-    padding: 1cm;
-  }
-
-  .container {
-    max-width: 100%;
-    width: 100%;
-  }
-
-  /* Centered title for print */
-  .print-title {
-    text-align: center;
-    font-size: 24pt;
-    font-weight: bold;
-    color: #3a5f4a;
-    margin-bottom: 1cm;
-    border-bottom: 2px solid #6b8e9f;
-    padding-bottom: 0.5cm;
-  }
-
-  /* Grid styling for print */
   .grid {
-    display: grid;
-    grid-template-columns: 60px repeat(14, 60px);
-    gap: 1px;
-    background-color: #d4e4d9;
-    border: 2px solid #2e4a3d;
-    font-size: 10pt;
+    font-size: 10px;
+    border: none;
   }
 
   .grid > div {
-    background-color: #ffffff;
-    padding: 4px;
+    border: 1px solid #000;
+  }
+
+  .print-title {
     text-align: center;
-    border: 1px solid #2e4a3d;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
   }
 
-  .grid > div:first-child {
-    font-weight: bold;
-    background-color: #6b8e9f;
-    color: #ffffff;
-  }
-
-  .grid > div:nth-child(-n+15) {
-    background-color: #6b8e9f;
-    color: #ffffff;
-    font-weight: bold;
-  }
-
-  /* Apply grade level colors */
-  .grid > div.grade-9 { background-color: #f8d7da; }
-  .grid > div.grade-10 { background-color: #d4edda; }
-  .grid > div.grade-11 { background-color: #cce5ff; }
-  .grid > div.grade-12 { background-color: #fff3cd; }
-  .grid > div.grade-other { background-color: #e2e3e5; }
-
-  /* Style for stacked grades in print */
-  .grid > div.grade-stack {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: 8pt;
-    line-height: 1.2;
-  }
-
-  /* Stats section */
   .print-stats {
-    margin-top: 1cm;
-    font-size: 12pt;
-    font-weight: bold;
+    margin-top: 1rem;
     text-align: center;
-    background-color: #f5efe7;
-    padding: 0.5cm;
-    border: 2px solid #3a5f4a;
-    border-radius: 5px;
   }
 
-  /* Footer for print */
   #print-footer {
-    display: block !important;
     position: fixed;
     bottom: 0;
     width: 100%;
     text-align: center;
-    font-size: 10pt;
-    color: #2e4a3d;
-    background-color: #d4e4d9;
-    padding: 0.2cm 0;
-    border-top: 1px solid #2e4a3d;
+    font-size: 0.8rem;
+  }
+
+  @page {
+    size: landscape;
+  }
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 600px) {
+  .grid-container {
+    padding-bottom: 10px; /* Space for scrollbar */
+  }
+
+  .grid > div {
+    min-width: 45px; /* Further reduce for very small screens */
+    font-size: 10px;
+  }
+
+  .grade-stack span {
+    font-size: 8px;
   }
 }

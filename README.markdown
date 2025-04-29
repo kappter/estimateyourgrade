@@ -1,6 +1,6 @@
 # Utah Quarter Credit Model GPA Calculator
 
-Welcome to the **Utah Quarter Credit Model GPA Calculator**, a powerful web-based tool designed to help students, educators, and parents plan and predict academic outcomes based on Utah’s high school graduation requirements. Hosted at [kappter.github.io/estimateyourgrade](https://kappter.github.io/estimateyourgrade/), this interactive application allows users to input grades, visualize credit progress, and calculate GPAs with precision, making it an essential resource for academic planning.
+Welcome to the **Utah Quarter Credit Model GPA Calculator**, a powerful web-based tool designed to help students, educators, and parents plan and predict academic outcomes based on Utah’s high school graduation requirements. Hosted at [kappter.github.io/estimateyourgrade](https://kappter.github.io/estimateyourgrade), this interactive application allows users to input grades, visualize credit progress, and calculate GPAs with precision, making it an essential resource for academic planning.
 
 ## Features
 
@@ -10,8 +10,21 @@ Welcome to the **Utah Quarter Credit Model GPA Calculator**, a powerful web-base
   - Switch seamlessly between layouts to suit your planning style.
 
 - **Flexible Credit Options**:
-  - Supports Utah’s 24-credit and 27-credit graduation pathways.
-  - Tracks credits needed for Language Arts (4), Math (4), Science (3), Social Studies (3), Government (2), Art (1), PE (1), CTE (1), Health (1), Career Tech (0.5), Financial Literacy (0.5), and Electives (3 or 6).
+  - Supports two graduation pathways: **24-credit** and **27-credit**.
+  - Tracks credits needed for:
+    - Language Arts (LA): 4
+    - Math (MA): 4
+    - Science (SC): 3
+    - Social Studies (SS): 3
+    - Government (GOV): 2
+    - Art: 1
+    - Physical Education (PE): 1
+    - Career and Technical Education (CTE): 1
+    - Health Education (HE): 1
+    - Career Tech (CT): 0.5
+    - Financial Literacy (FL): 0.5
+    - Electives (EL): **3** (for 24-credit path) or **6** (for 27-credit path)
+  - **Note**: These credit requirements are based on a specific model used by the calculator and may differ from standard Utah high school graduation requirements or specific school district policies. Users should verify with their school for exact graduation criteria.
 
 - **Pass Grades (“P” and “P+”)**:
   - Includes “P” (Pass) and “P+” grades that grant 0.25 credits (0.125 for FL/CT slots) without affecting GPA, ideal for pass/fail courses.
@@ -52,70 +65,4 @@ Welcome to the **Utah Quarter Credit Model GPA Calculator**, a powerful web-base
 - **Parents**: Gain insight into their child’s progress, set achievable goals, and collaborate with counselors to support graduation readiness.
 - **Educators and Counselors**: Assist students in course selection, monitor credit accumulation, and provide data-driven advice using printed reports.
 - **Homeschool Families**: Track credits and GPA for customized curricula, ensuring compliance with Utah’s graduation standards.
-- **College-Bound Students**: Use accurate GPA calculations and credit summaries to strengthen applications and scholarship opportunities.
-
-## Getting Started
-
-1. **Access the App**:
-   - Visit [kappter.github.io/estimateyourgrade](https://kappter.github.io/estimateyourgrade/) to start using the calculator instantly.
-
-2. **Clone the Repository** (for developers):
-   ```bash
-   git clone https://github.com/kappter/estimateyourgrade.git
-   cd estimateyourgrade
-   ```
-
-3. **Run Locally**:
-   - Open `index.html` in a browser (no server required for basic use).
-   - For development, use a local server (e.g., `npx serve`) to avoid CORS issues with print functionality.
-
-4. **Customize or Contribute**:
-   - Edit `app.js` to modify grades, credit requirements, or logic.
-   - Update `styles.css` for custom theming.
-   - Submit pull requests or issues on [GitHub](https://github.com/kappter/estimateyourgrade).
-
-## Project Structure
-
-```
-estimateyourgrade/
-├── index.html        # Main HTML file
-├── styles.css        # Custom CSS for styling
-├── app.js            # React-based JavaScript logic
-└── README.md         # This file
-```
-
-## Dependencies
-
-- **React 18.2.0**: For dynamic UI components.
-- **Tailwind CSS (CDN)**: For responsive styling.
-- **Babel Standalone**: For in-browser JSX transformation.
-
-*Note*: For production, consider installing Tailwind via npm and precompiling JSX with a build tool like Vite.
-
-## Data Source
-
-Credit requirements are based on the [Utah State Board of Education Graduation Requirements](https://www.schools.utah.gov/curr/graduationrequirements).
-
-## Contributing
-
-We welcome contributions! To get started:
-1. Fork the repository.
-2. Create a feature branch (`git checkout -b feature-name`).
-3. Commit changes (`git commit -m "Add feature"`).
-4. Push to the branch (`git push origin feature-name`).
-5. Open a pull request.
-
-Please report bugs or suggest features via [GitHub Issues](https://github.com/kappter/estimateyourgrade/issues).
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- Built with ❤️ by [kappter](https://github.com/kappter).
-- Inspired by the need for accessible, predictive tools to empower Utah students.
-
----
-
-Plan your academic future with confidence using the Utah Quarter Credit Model GPA Calculator!
+- **College-Bound Students**: Use accurate GPA calculations and credit summaries to strengt

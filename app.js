@@ -8,31 +8,34 @@ const gpaMap = {
   "C": 2.0, "C-": 1.7, "D+": 1.3, "D": 1.0, "D-": 0.7, "F": 0.0
 };
 
-// Subjects by grade level
-const subjects = ["LA", "MA", "SC", "SS", "GOV", "Art", "PE", "CTE", "HE", "CT", "FL", "EL"];
-
-// Quarters per subject
-const quarters = ["Q1", "Q2", "Q3", "Q4"];
-
-// Required credits for graduation (24 credits, in quarters: 1 credit = 4 quarters)
-const requiredCredits24 = {
-  "LA": 16, "MA": 16, "SC": 12, "SS": 12, "GOV": 8, "Art": 4, "PE": 4, "CTE": 4, "HE": 4, "CT": 4, "FL": 4, "EL": 8
+// Subjects by grade level and category
+const subjects = {
+  "9th": ["LA", "MA", "SC", "SS", "GOV", "Art", "PE", "CTE", "HE", "CT", "FL", "EL"],
+  "10th": ["LA", "MA", "SC", "SS", "GOV", "Art", "PE", "CTE", "HE", "CT", "FL", "EL"],
+  "11th": ["LA", "MA", "SC", "SS", "GOV", "Art", "PE", "CTE", "HE", "CT", "FL", "EL"],
+  "12th": ["LA", "MA", "SC", "SS", "GOV", "Art", "PE", "CTE", "HE", "CT", "FL", "EL"],
+  "Other": ["Elective", "Elective", "Elective", "Elective", "Elective", "Elective", "Elective", "Elective", "Elective", "Elective", "Elective", "Elective"]
 };
 
-// Required credits for graduation (27 credits, in quarters)
+// Required credits for graduation (24 credits)
+const requiredCredits24 = {
+  "LA": 4, "MA": 4, "SC": 3, "SS": 3, "GOV": 2, "Art": 1, "PE": 1, "CTE": 1, "HE": 1, "CT": 1, "FL": 1, "EL": 2
+};
+
+// Required credits for graduation (27 credits)
 const requiredCredits27 = {
-  "LA": 16, "MA": 16, "SC": 12, "SS": 12, "GOV": 8, "Art": 4, "PE": 4, "CTE": 4, "HE": 4, "CT": 4, "FL": 4, "EL": 20
+  "LA": 4, "MA": 4, "SC": 3, "SS": 3, "GOV": 2, "Art": 1, "PE": 1, "CTE": 1, "HE": 1, "CT": 1, "FL": 1, "EL": 5
 };
 
 const App = () => {
   const [theme, setTheme] = React.useState(localStorage.getItem('theme') || 'light');
   const [creditOption, setCreditOption] = React.useState("24");
   const [grid, setGrid] = React.useState({
-    "9th": subjects.map(() => quarters.map(() => "")),
-    "10th": subjects.map(() => quarters.map(() => "")),
-    "11th": subjects.map(() => quarters.map(() => "")),
-    "12th": subjects.map(() => quarters.map(() => "")),
-    "Other": subjects.map(() => quarters.map(() => ""))
+    "9th": Array(subjects["9th"].length).fill(""),
+    "10th": Array(subjects["10th"].length).fill(""),
+    "11th": Array(subjects["11th"].length).fill(""),
+    "12th": Array(subjects["12th"].length).fill(""),
+    "Other": Array(subjects["Other"].length).fill("")
   });
   const [activeCell, setActiveCell] = React.useState(null);
 
@@ -49,17 +52,17 @@ const App = () => {
     setCreditOption(e.target.value);
   };
 
-  const handleCellHover = (gradeLevel, subjectIdx, quarterIdx) => {
-    setActiveCell({ gradeLevel, subjectIdx, quarterIdx });
+  const handleCellHover = (gradeLevel, col) => {
+    setActiveCell({ gradeLevel, col });
   };
 
   const handleCellLeave = () => {
     setActiveCell(null);
   };
 
-  const handleSelectGrade = (gradeLevel, subjectIdx, quarterIdx, grade) => {
+  const handleSelectGrade = (gradeLevel, col, grade) => {
     const newGrid = { ...grid };
-    newGrid[gradeLevel][subjectIdx][quarterIdx] = grade;
+    newGrid[gradeLevel] = grid[gradeLevel].map((g, j) => (j === col ? grade : g));
     setGrid(newGrid);
     setActiveCell(null);
   };
@@ -70,30 +73,28 @@ const App = () => {
     const earnedCredits = {};
     let totalCredits = 0;
     let totalGPA = 0;
-    let totalQuarters = 0;
+    let totalCourses = 0;
 
     Object.keys(grid).forEach((gradeLevel) => {
-      grid[gradeLevel].forEach((subjectQuarters, subjectIdx) => {
-        const subject = gradeLevel === "Other" && subjectIdx === subjects.length - 1 ? "EL" : subjects[subjectIdx];
-        subjectQuarters.forEach((grade) => {
-          if (grade) {
-            earnedCredits[subject] = (earnedCredits[subject] || 0) + 0.25;
-            totalCredits += 0.25;
-            totalGPA += gpaMap[grade];
-            totalQuarters += 1;
-          }
-        });
+      grid[gradeLevel].forEach((grade, col) => {
+        if (grade) {
+          const subject = subjects[gradeLevel][col];
+          earnedCredits[subject] = (earnedCredits[subject] || 0) + 1;
+          totalCredits += 1;
+          totalGPA += gpaMap[grade];
+          totalCourses += 1;
+        }
       });
     });
 
     let creditsNeeded = 0;
     Object.keys(requiredCredits).forEach((subject) => {
       const earned = earnedCredits[subject] || 0;
-      const needed = (requiredCredits[subject] * 0.25) - earned;
+      const needed = requiredCredits[subject] - earned;
       if (needed > 0) creditsNeeded += needed;
     });
 
-    const gpa = totalQuarters > 0 ? (totalGPA / totalQuarters).toFixed(2) : 0;
+    const gpa = totalCourses > 0 ? (totalGPA / totalCourses).toFixed(2) : 0;
     return { totalCredits, creditsNeeded, gpa };
   };
 
@@ -109,11 +110,11 @@ const App = () => {
             <option value="27">27 Credits</option>
           </select>
           <a href="#" onClick={() => setGrid({
-            "9th": subjects.map(() => quarters.map(() => "")),
-            "10th": subjects.map(() => quarters.map(() => "")),
-            "11th": subjects.map(() => quarters.map(() => "")),
-            "12th": subjects.map(() => quarters.map(() => "")),
-            "Other": subjects.map(() => quarters.map(() => ""))
+            "9th": Array(subjects["9th"].length).fill(""),
+            "10th": Array(subjects["10th"].length).fill(""),
+            "11th": Array(subjects["11th"].length).fill(""),
+            "12th": Array(subjects["12th"].length).fill(""),
+            "Other": Array(subjects["Other"].length).fill("")
           })} className="text-lg">Clear Grid</a>
           <a href="#" onClick={toggleTheme} className="text-lg">
             {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
@@ -122,56 +123,54 @@ const App = () => {
       </nav>
       <main className="container mx-auto p-4">
         <h1 className="text-3xl font-bold text-center text-blue-600 mb-4">
-          Utah Quarter Credit Model GPA Calculator
+          Utah Credit Model GPA Calculator
         </h1>
         <div className="flex justify-center mb-8">
-          <div className="grid grid-cols-[60px_repeat(48,40px)] gap-1 w-fit">
+          <div className="grid grid-cols-[60px_repeat(12,60px)] gap-1 w-fit">
             <div className="bg-blue-500 text-white p-2 font-bold">Grade</div>
-            {subjects.map((subject) => quarters.map((quarter, qIdx) => (
-              <div key={`${subject}-${qIdx}`} className="bg-blue-500 text-white p-1 text-center font-bold text-xs">
-                {subject} {quarter}
+            {subjects["9th"].map((subject, i) => (
+              <div key={i} className="bg-blue-500 text-white p-2 text-center font-bold text-xs">
+                {subject}
               </div>
-            ))).flat()}
+            ))}
 
-            {Object.keys(grid).map((gradeLevel) => (
+            {Object.keys(subjects).map((gradeLevel) => (
               <React.Fragment key={gradeLevel}>
                 <div className={`p-2 font-semibold flex items-center text-sm grade-${gradeLevel.toLowerCase().replace(/\dth/, '')}`}>
                   {gradeLevel}
                 </div>
-                {grid[gradeLevel].map((subjectQuarters, subjectIdx) =>
-                  quarters.map((_, quarterIdx) => (
-                    <div
-                      key={`${subjectIdx}-${quarterIdx}`}
-                      onMouseEnter={() => handleCellHover(gradeLevel, subjectIdx, quarterIdx)}
-                      onMouseLeave={handleCellLeave}
-                      className={`grid-cell p-1 border border-gray-300 cursor-pointer transition-colors relative grade-${gradeLevel.toLowerCase().replace(/\dth/, '')} flex items-center justify-center text-sm`}
-                    >
-                      {activeCell && activeCell.gradeLevel === gradeLevel && activeCell.subjectIdx === subjectIdx && activeCell.quarterIdx === quarterIdx ? (
-                        <div className="absolute inset-0 grid grid-cols-4 grid-rows-4 gap-0.5 p-0.5 bg-[var(--cell-bg)] z-50 grade-selector">
-                          {grades.map((g) => (
-                            <div
-                              key={g}
-                              onClick={() => handleSelectGrade(gradeLevel, subjectIdx, quarterIdx, g)}
-                              className="flex items-center justify-center text-[10px] hover:bg-[var(--cell-hover)] cursor-pointer"
-                            >
-                              {g}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        subjectQuarters[quarterIdx] || ""
-                      )}
-                    </div>
-                  ))
-                ).flat()}
+                {grid[gradeLevel].map((grade, col) => (
+                  <div
+                    key={col}
+                    onMouseEnter={() => handleCellHover(gradeLevel, col)}
+                    onMouseLeave={handleCellLeave}
+                    className={`grid-cell p-1 border border-gray-300 cursor-pointer transition-colors relative grade-${gradeLevel.toLowerCase().replace(/\dth/, '')} flex items-center justify-center text-sm`}
+                  >
+                    {activeCell && activeCell.gradeLevel === gradeLevel && activeCell.col === col ? (
+                      <div className="absolute inset-0 grid grid-cols-4 grid-rows-4 gap-0.5 p-0.5 bg-[var(--cell-bg)] z-50 grade-selector">
+                        {grades.map((g) => (
+                          <div
+                            key={g}
+                            onClick={() => handleSelectGrade(gradeLevel, col, g)}
+                            className="flex items-center justify-center text-[10px] hover:bg-[var(--cell-hover)] cursor-pointer"
+                          >
+                            {g}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      grade || ""
+                    )}
+                  </div>
+                ))}
               </React.Fragment>
             ))}
           </div>
         </div>
       </main>
       <footer className="footer">
-        <p>Credits Needed to Graduate: {creditsNeeded.toFixed(2)}</p>
-        <p>Total Credits: {totalCredits.toFixed(2)}</p>
+        <p>Credits Needed to Graduate: {creditsNeeded}</p>
+        <p>Total Credits: {totalCredits}</p>
         <p>GPA: {gpa}</p>
         <p className="copyright">© 2025 All Rights Reserved</p>
       </footer>

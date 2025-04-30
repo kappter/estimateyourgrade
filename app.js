@@ -8,6 +8,9 @@ const gpaMap = {
   "C": 2.0, "C-": 1.7, "D+": 1.3, "D": 1.0, "D-": 0.7, "F": 0.0
 };
 
+// Passing grades for random fill
+const passingGrades = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", "P", "P+"];
+
 // Subjects by grade level
 const subjects = ["LA", "MA", "SC", "SS", "GOV", "Art", "PE", "CTE", "HE", "FL", "EL"];
 
@@ -168,6 +171,81 @@ const App = () => {
 
         if (earnedSlots < slotsForSubject) {
           newGrid.rowBased[rowKey][currentCol] = fillGrade;
+          slotsFilled++;
+        }
+
+        currentCol++;
+        if (currentCol >= subjects.length) {
+          currentCol = 0;
+          currentRowIndex++;
+        }
+      }
+    }
+
+    setGrid(newGrid);
+  };
+
+  const handleFillRandom = () => {
+    const newGrid = { ...grid };
+    const requiredCredits = creditOption === "24" ? requiredCredits24 : requiredCredits27;
+    const totalSlotsNeeded = creditOption === "24" ? 96 : 108; // 24/0.25 or 27/0.25
+    let slotsFilled = 0;
+
+    if (gridLayout === "stacked") {
+      // Clear the stacked grid
+      Object.keys(newGrid.stacked).forEach(level => {
+        newGrid.stacked[level] = Array(subjects.length).fill().map(() => ["", "", "", ""]);
+      });
+
+      // Fill slots by subject, respecting required credits
+      const gradeLevels = ["9th", "10th", "11th", "12th", "Other"];
+      subjects.forEach((subject, col) => {
+        const slotsForSubject = (requiredCredits[subject] / 0.25); // Number of 0.25-credit slots
+        let slotsToFill = Math.min(slotsForSubject, totalSlotsNeeded - slotsFilled);
+        let currentLevelIndex = 0;
+
+        while (slotsToFill > 0 && currentLevelIndex < gradeLevels.length) {
+          const level = gradeLevels[currentLevelIndex];
+          const currentGrades = newGrid.stacked[level][col];
+          const emptySlots = currentGrades.filter(g => !g).length;
+          const slotsToAdd = Math.min(emptySlots, slotsToFill);
+          
+          for (let i = 0; i < slotsToAdd; i++) {
+            const firstEmptyIndex = currentGrades.findIndex(g => !g);
+            if (firstEmptyIndex !== -1) {
+              const randomGrade = passingGrades[Math.floor(Math.random() * passingGrades.length)];
+              currentGrades[firstEmptyIndex] = randomGrade;
+            }
+          }
+          
+          newGrid.stacked[level][col] = [...currentGrades];
+          slotsFilled += slotsToAdd;
+          slotsToFill -= slotsToAdd;
+          
+          if (slotsToFill === 0) break;
+          currentLevelIndex++;
+        }
+      });
+    } else {
+      // Clear the rowBased grid
+      Object.keys(newGrid.rowBased).forEach(row => {
+        newGrid.rowBased[row] = Array(subjects.length).fill("");
+      });
+
+      // Fill slots sequentially
+      const rowKeys = Object.keys(newGrid.rowBased);
+      let currentRowIndex = 0;
+      let currentCol = 0;
+
+      while (slotsFilled < totalSlotsNeeded && currentRowIndex < rowKeys.length) {
+        const rowKey = rowKeys[currentRowIndex];
+        const subject = subjects[currentCol];
+        const slotsForSubject = (requiredCredits[subject] / 0.25);
+        const earnedSlots = Object.values(newGrid.rowBased).reduce((sum, row) => sum + (row[currentCol] ? 1 : 0), 0);
+
+        if (earnedSlots < slotsForSubject) {
+          const randomGrade = passingGrades[Math.floor(Math.random() * passingGrades.length)];
+          newGrid.rowBased[rowKey][currentCol] = randomGrade;
           slotsFilled++;
         }
 
@@ -467,6 +545,12 @@ const App = () => {
                 Fill with {grade}
               </button>
             ))}
+            <button
+              onClick={handleFillRandom}
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+            >
+              Fill with Random
+            </button>
           </div>
         </div>
       </main>

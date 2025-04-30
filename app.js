@@ -57,7 +57,17 @@ const App = () => {
       "Other-2": Array(subjects.length).fill(""),
       "Other-3": Array(subjects.length).fill(""),
       "Other-4": Array(subjects.length).fill("")
-    }
+    },
+    transposed: subjects.reduce((acc, subject) => {
+      acc[subject] = {
+        "9th": ["", "", "", ""],
+        "10th": ["", "", "", ""],
+        "11th": ["", "", "", ""],
+        "12th": ["", "", "", ""],
+        "Other": ["", "", "", ""]
+      };
+      return acc;
+    }, {})
   });
   const [activeCell, setActiveCell] = React.useState(null);
 
@@ -79,7 +89,6 @@ const App = () => {
     const newGrid = { ...grid };
 
     if (newLayout === "stacked" && gridLayout === "rowBased") {
-      // Convert from row-based to stacked
       Object.keys(newGrid.stacked).forEach(level => {
         newGrid.stacked[level] = Array(subjects.length).fill().map(() => ["", "", "", ""]);
       });
@@ -99,7 +108,6 @@ const App = () => {
         });
       });
     } else if (newLayout === "rowBased" && gridLayout === "stacked") {
-      // Convert from stacked to row-based
       Object.keys(newGrid.rowBased).forEach(row => {
         newGrid.rowBased[row] = Array(subjects.length).fill("");
       });
@@ -109,6 +117,77 @@ const App = () => {
         const rows = [`${level}-1`, `${level}-2`, `${level}-3`, `${level}-4`];
         subjects.forEach((subject, col) => {
           const grades = grid.stacked[level][col];
+          grades.forEach((grade, i) => {
+            if (grade && i < 4) {
+              newGrid.rowBased[rows[i]][col] = grade;
+            }
+          });
+        });
+      });
+    } else if (newLayout === "transposed" && gridLayout === "stacked") {
+      Object.keys(newGrid.transposed).forEach(subject => {
+        newGrid.transposed[subject] = {
+          "9th": ["", "", "", ""],
+          "10th": ["", "", "", ""],
+          "11th": ["", "", "", ""],
+          "12th": ["", "", "", ""],
+          "Other": ["", "", "", ""]
+        };
+      });
+
+      const gradeLevels = ["9th", "10th", "11th", "12th", "Other"];
+      subjects.forEach((subject, col) => {
+        gradeLevels.forEach(level => {
+          const grades = grid.stacked[level][col];
+          newGrid.transposed[subject][level] = [...grades];
+        });
+      });
+    } else if (newLayout === "transposed" && gridLayout === "rowBased") {
+      Object.keys(newGrid.transposed).forEach(subject => {
+        newGrid.transposed[subject] = {
+          "9th": ["", "", "", ""],
+          "10th": ["", "", "", ""],
+          "11th": ["", "", "", ""],
+          "12th": ["", "", "", ""],
+          "Other": ["", "", "", ""]
+        };
+      });
+
+      const gradeLevels = ["9th", "10th", "11th", "12th", "Other"];
+      gradeLevels.forEach((level, levelIndex) => {
+        const rows = [`${level}-1`, `${level}-2`, `${level}-3`, `${level}-4`];
+        subjects.forEach((subject, col) => {
+          let gradeIndex = 0;
+          rows.forEach(row => {
+            const grade = grid.rowBased[row][col];
+            if (grade && gradeIndex < 4) {
+              newGrid.transposed[subject][level][gradeIndex] = grade;
+              gradeIndex++;
+            }
+          });
+        });
+      });
+    } else if (newLayout === "stacked" && gridLayout === "transposed") {
+      Object.keys(newGrid.stacked).forEach(level => {
+        newGrid.stacked[level] = Array(subjects.length).fill().map(() => ["", "", "", ""]);
+      });
+
+      subjects.forEach((subject, col) => {
+        const gradeLevels = ["9th", "10th", "11th", "12th", "Other"];
+        gradeLevels.forEach(level => {
+          newGrid.stacked[level][col] = [...grid.transposed[subject][level]];
+        });
+      });
+    } else if (newLayout === "rowBased" && gridLayout === "transposed") {
+      Object.keys(newGrid.rowBased).forEach(row => {
+        newGrid.rowBased[row] = Array(subjects.length).fill("");
+      });
+
+      const gradeLevels = ["9th", "10th", "11th", "12th", "Other"];
+      gradeLevels.forEach((level, levelIndex) => {
+        const rows = [`${level}-1`, `${level}-2`, `${level}-3`, `${level}-4`];
+        subjects.forEach((subject, col) => {
+          const grades = grid.transposed[subject][level];
           grades.forEach((grade, i) => {
             if (grade && i < 4) {
               newGrid.rowBased[rows[i]][col] = grade;
@@ -143,8 +222,19 @@ const App = () => {
           newGrid.stacked[key][col] = [...currentGrades];
         }
       }
-    } else {
+    } else if (gridLayout === "rowBased") {
       newGrid.rowBased[key][col] = grade === "Clear" ? "" : grade;
+    } else if (gridLayout === "transposed") {
+      if (grade === "Clear") {
+        newGrid.transposed[key][col] = ["", "", "", ""];
+      } else {
+        const currentGrades = newGrid.transposed[key][col];
+        const firstEmptyIndex = currentGrades.findIndex(g => !g);
+        if (firstEmptyIndex !== -1) {
+          currentGrades[firstEmptyIndex] = grade;
+          newGrid.transposed[key][col] = [...currentGrades];
+        }
+      }
     }
     setGrid(newGrid);
     setActiveCell(null);
@@ -186,7 +276,7 @@ const App = () => {
           currentLevelIndex++;
         }
       });
-    } else {
+    } else if (gridLayout === "rowBased") {
       Object.keys(newGrid.rowBased).forEach(row => {
         newGrid.rowBased[row] = Array(subjects.length).fill("");
       });
@@ -212,6 +302,42 @@ const App = () => {
           currentRowIndex++;
         }
       }
+    } else if (gridLayout === "transposed") {
+      Object.keys(newGrid.transposed).forEach(subject => {
+        newGrid.transposed[subject] = {
+          "9th": ["", "", "", ""],
+          "10th": ["", "", "", ""],
+          "11th": ["", "", "", ""],
+          "12th": ["", "", "", ""],
+          "Other": ["", "", "", ""]
+        };
+      });
+
+      const gradeLevels = ["9th", "10th", "11th", "12th", "Other"];
+      subjects.forEach(subject => {
+        const slotsForSubject = (requiredCredits[subject] / 0.25);
+        let slotsToFill = slotsForSubject;
+        let currentLevelIndex = 0;
+
+        while (slotsToFill > 0 && currentLevelIndex < gradeLevels.length) {
+          const level = gradeLevels[currentLevelIndex];
+          const currentGrades = newGrid.transposed[subject][level];
+          const emptySlots = currentGrades.filter(g => !g).length;
+          const slotsToAdd = Math.min(emptySlots, slotsToFill);
+
+          for (let i = 0; i < slotsToAdd; i++) {
+            const firstEmptyIndex = currentGrades.findIndex(g => !g);
+            if (firstEmptyIndex !== -1) {
+              currentGrades[firstEmptyIndex] = fillGrade;
+              slotsFilled++;
+            }
+          }
+
+          newGrid.transposed[subject][level] = [...currentGrades];
+          slotsToFill -= slotsToAdd;
+          currentLevelIndex++;
+        }
+      });
     }
 
     setGrid(newGrid);
@@ -254,7 +380,7 @@ const App = () => {
           currentLevelIndex++;
         }
       });
-    } else {
+    } else if (gridLayout === "rowBased") {
       Object.keys(newGrid.rowBased).forEach(row => {
         newGrid.rowBased[row] = Array(subjects.length).fill("");
       });
@@ -281,6 +407,43 @@ const App = () => {
           currentRowIndex++;
         }
       }
+    } else if (gridLayout === "transposed") {
+      Object.keys(newGrid.transposed).forEach(subject => {
+        newGrid.transposed[subject] = {
+          "9th": ["", "", "", ""],
+          "10th": ["", "", "", ""],
+          "11th": ["", "", "", ""],
+          "12th": ["", "", "", ""],
+          "Other": ["", "", "", ""]
+        };
+      });
+
+      const gradeLevels = ["9th", "10th", "11th", "12th", "Other"];
+      subjects.forEach(subject => {
+        const slotsForSubject = (requiredCredits[subject] / 0.25);
+        let slotsToFill = slotsForSubject;
+        let currentLevelIndex = 0;
+
+        while (slotsToFill > 0 && currentLevelIndex < gradeLevels.length) {
+          const level = gradeLevels[currentLevelIndex];
+          const currentGrades = newGrid.transposed[subject][level];
+          const emptySlots = currentGrades.filter(g => !g).length;
+          const slotsToAdd = Math.min(emptySlots, slotsToFill);
+
+          for (let i = 0; i < slotsToAdd; i++) {
+            const firstEmptyIndex = currentGrades.findIndex(g => !g);
+            if (firstEmptyIndex !== -1) {
+              const randomGrade = passingGrades[Math.floor(Math.random() * passingGrades.length)];
+              currentGrades[firstEmptyIndex] = randomGrade;
+              slotsFilled++;
+            }
+          }
+
+          newGrid.transposed[subject][level] = [...currentGrades];
+          slotsToFill -= slotsToAdd;
+          currentLevelIndex++;
+        }
+      });
     }
 
     setGrid(newGrid);
@@ -313,7 +476,7 @@ const App = () => {
           }
         }
       }
-    } else {
+    } else if (gridLayout === "rowBased") {
       for (const rowKey of Object.keys(grid.rowBased)) {
         for (let col = 0; col < grid.rowBased[rowKey].length; col++) {
           const grade = grid.rowBased[rowKey][col];
@@ -327,6 +490,25 @@ const App = () => {
             if (grade !== "P" && grade !== "P+") {
               totalGPA += gpaMap[grade] * creditValue;
               totalCourses += creditValue;
+            }
+          }
+        }
+      }
+    } else if (gridLayout === "transposed") {
+      for (const subject of Object.keys(grid.transposed)) {
+        for (const level of Object.keys(grid.transposed[subject])) {
+          const gradeArray = grid.transposed[subject][level];
+          for (const grade of gradeArray) {
+            if (grade) {
+              const creditValue = creditValues[subject];
+              if (grade !== "F") {
+                earnedCredits[subject] = (earnedCredits[subject] || 0) + creditValue;
+                totalCredits += creditValue;
+              }
+              if (grade !== "P" && grade !== "P+") {
+                totalGPA += gpaMap[grade] * creditValue;
+                totalCourses += creditValue;
+              }
             }
           }
         }
@@ -382,7 +564,7 @@ const App = () => {
           `).join('')}
         </div>
       `;
-    } else {
+    } else if (gridLayout === "rowBased") {
       gridHtml = `
         <div class="grid">
           <div>Grade</div>
@@ -398,6 +580,28 @@ const App = () => {
             ${grid.rowBased[rowKey].map(grade => `
               <div class="grade-${rowKey.split('-')[0].toLowerCase().replace(/\dth/, '')}">${grade || ""}</div>
             `).join('')}
+          `).join('')}
+        </div>
+      `;
+    } else if (gridLayout === "transposed") {
+      gridHtml = `
+        <div class="grid grid-transposed">
+          <div>Subject</div>
+          ${Object.keys(grid.transposed[subjects[0]]).map(level => `<div>${level}</div>`).join('')}
+          <div>Earned/Req.</div>
+          ${Object.keys(grid.transposed[subjects[0]]).map(level => `
+            <div class="bg-gray-200">-</div>
+          `).join('')}
+          ${subjects.map(subject => `
+            <div class="bg-blue-500 text-white p-2 text-center font-bold text-xs">${subject}</div>
+            ${Object.keys(grid.transposed[subject]).map(level => `
+              <div class="grade-${level.toLowerCase().replace(/\dth/, '')} grade-stack">
+                ${grid.transposed[subject][level].map(grade => `<span>${grade || ""}</span>`).join('')}
+              </div>
+            `).join('')}
+            <div class="${(earnedCredits[subject] || 0) >= requiredCredits24[subject] ? 'bg-green-200' : 'bg-gray-100'}">
+              ${(earnedCredits[subject] || 0).toFixed(2)}/${requiredCredits24[subject].toFixed(2)}
+            </div>
           `).join('')}
         </div>
       `;
@@ -454,7 +658,8 @@ const App = () => {
           'select',
           { onChange: handleGridLayoutChange, value: gridLayout, className: 'text-lg' },
           React.createElement('option', { value: 'stacked' }, 'Stacked Grid'),
-          React.createElement('option', { value: 'rowBased' }, 'Row-Based Grid')
+          React.createElement('option', { value: 'rowBased' }, 'Row-Based Grid'),
+          React.createElement('option', { value: 'transposed' }, 'Transposed Grid')
         ),
         React.createElement(
           'a',
@@ -466,9 +671,19 @@ const App = () => {
                 Object.keys(newGrid.stacked).forEach(level => {
                   newGrid.stacked[level] = Array(subjects.length).fill().map(() => ["", "", "", ""]);
                 });
-              } else {
+              } else if (gridLayout === "rowBased") {
                 Object.keys(newGrid.rowBased).forEach(row => {
                   newGrid.rowBased[row] = Array(subjects.length).fill("");
+                });
+              } else if (gridLayout === "transposed") {
+                Object.keys(newGrid.transposed).forEach(subject => {
+                  newGrid.transposed[subject] = {
+                    "9th": ["", "", "", ""],
+                    "10th": ["", "", "", ""],
+                    "11th": ["", "", "", ""],
+                    "12th": ["", "", "", ""],
+                    "Other": ["", "", "", ""]
+                  };
                 });
               }
               setGrid(newGrid);
@@ -498,113 +713,186 @@ const App = () => {
         { className: 'flex justify-center mb-8' },
         React.createElement(
           'div',
-          { className: `grid grid-cols-[60px_repeat(${subjects.length},60px)] gap-1 w-fit ${gridLayout === "rowBased" ? "grid-row-based" : ""}` },
-          React.createElement('div', { className: 'bg-blue-500 text-white p-2 font-bold' }, 'Grade'),
-          subjects.map((subject, i) =>
-            React.createElement(
-              'div',
-              { key: i, className: 'bg-blue-500 text-white p-2 text-center font-bold text-xs' },
-              subject
-            )
-          ),
-          React.createElement('div', { className: 'bg-gray-200 p-2 font-bold text-xs' }, 'Earned/Req.'),
-          subjects.map((subject, i) =>
-            React.createElement(
-              'div',
-              {
-                key: i,
-                className: `p-2 text-center text-xs ${(earnedCredits[subject] || 0) >= requiredCredits24[subject] ? 'bg-green-200' : 'bg-gray-100'}`
-              },
-              `${(earnedCredits[subject] || 0).toFixed(2)}/${requiredCredits24[subject].toFixed(2)}`
-            )
-          ),
-          gridLayout === "stacked"
-            ? Object.keys(grid.stacked).map(gradeLevel => {
-                console.log(`Rendering stacked mode for ${gradeLevel}:`, grid.stacked[gradeLevel]);
-                return React.createElement(
-                  React.Fragment,
-                  { key: gradeLevel },
+          { className: `grid ${gridLayout === "rowBased" ? "grid-row-based" : gridLayout === "transposed" ? "grid-transposed" : ""} ${gridLayout === "transposed" ? "grid-cols-[60px_repeat(5,60px)]" : "grid-cols-[60px_repeat(" + subjects.length + ",60px)]"} gap-1 w-fit` },
+          gridLayout === "transposed"
+            ? [
+                React.createElement('div', { className: 'bg-blue-500 text-white p-2 font-bold' }, 'Subject'),
+                ...Object.keys(grid.transposed[subjects[0]]).map((level, i) =>
                   React.createElement(
                     'div',
-                    { className: `p-2 font-semibold flex items-center text-sm grade-${gradeLevel.toLowerCase().replace(/\dth/, '')}` },
-                    gradeLevel
-                  ),
-                  grid.stacked[gradeLevel].map((gradeArray, col) =>
+                    { key: i, className: 'bg-blue-500 text-white p-2 text-center font-bold text-xs' },
+                    level
+                  )
+                ),
+                React.createElement('div', { className: 'bg-gray-200 p-2 font-bold text-xs' }, 'Earned/Req.'),
+                ...Object.keys(grid.transposed[subjects[0]]).map((_, i) =>
+                  React.createElement(
+                    'div',
+                    { key: i, className: 'bg-gray-200 p-2 text-center text-xs' },
+                    '-'
+                  )
+                ),
+                ...subjects.flatMap(subject =>
+                  [
+                    React.createElement(
+                      'div',
+                      { className: 'bg-blue-500 text-white p-2 text-center font-bold text-xs' },
+                      subject
+                    ),
+                    ...Object.keys(grid.transposed[subject]).map((level, col) =>
+                      React.createElement(
+                        'div',
+                        {
+                          key: col,
+                          onMouseEnter: () => handleCellHover(subject, level),
+                          onMouseLeave: handleCellLeave,
+                          className: `grid-cell p-1 border border-gray-300 cursor-pointer transition-colors relative grade-${level.toLowerCase().replace(/\dth/, '')} flex items-center justify-center text-sm`
+                        },
+                        activeCell && activeCell.key === subject && activeCell.col === level
+                          ? React.createElement(
+                              'div',
+                              { className: 'absolute inset-0 grid grid-cols-4 grid-rows-4 gap-0.5 p-0.5 bg-[var(--cell-bg)] z-50 grade-selector' },
+                              grades.map(g =>
+                                React.createElement(
+                                  'div',
+                                  {
+                                    key: g,
+                                    onClick: () => handleSelectGrade(subject, level, g),
+                                    className: 'flex items-center justify-center text-[10px] hover:bg-[var(--cell-hover)] cursor-pointer'
+                                  },
+                                  g
+                                )
+                              )
+                            )
+                          : React.createElement(
+                              'div',
+                              { className: 'grade-stack' },
+                              grid.transposed[subject][level].map((grade, i) =>
+                                React.createElement('span', { key: i }, grade || "")
+                              )
+                            )
+                      )
+                    ),
                     React.createElement(
                       'div',
                       {
-                        key: col,
-                        onMouseEnter: () => handleCellHover(gradeLevel, col),
-                        onMouseLeave: handleCellLeave,
-                        className: `grid-cell p-1 border border-gray-300 cursor-pointer transition-colors relative grade-${gradeLevel.toLowerCase().replace(/\dth/, '')} flex items-center justify-center text-sm`
+                        className: `p-2 text-center text-xs ${(earnedCredits[subject] || 0) >= requiredCredits24[subject] ? 'bg-green-200' : 'bg-gray-100'}`
                       },
-                      activeCell && activeCell.key === gradeLevel && activeCell.col === col
-                        ? React.createElement(
-                            'div',
-                            { className: 'absolute inset-0 grid grid-cols-4 grid-rows-4 gap-0.5 p-0.5 bg-[var(--cell-bg)] z-50 grade-selector' },
-                            grades.map(g =>
-                              React.createElement(
-                                'div',
-                                {
-                                  key: g,
-                                  onClick: () => handleSelectGrade(gradeLevel, col, g),
-                                  className: 'flex items-center justify-center text-[10px] hover:bg-[var(--cell-hover)] cursor-pointer'
-                                },
-                                g
-                              )
-                            )
-                          )
-                        : React.createElement(
-                            'div',
-                            { className: 'grade-stack' },
-                            gradeArray.map((grade, i) =>
-                              React.createElement('span', { key: i }, grade || "")
-                            )
-                          )
+                      `${(earnedCredits[subject] || 0).toFixed(2)}/${requiredCredits24[subject].toFixed(2)}`
                     )
-                  )
-                );
-              })
-            : rowBasedKeys.map(rowKey => {
-                console.log(`Rendering row-based mode for ${rowKey}:`, grid.rowBased[rowKey]);
-                return React.createElement(
-                  React.Fragment,
-                  { key: rowKey },
+                  ]
+                )
+              ]
+            : [
+                React.createElement('div', { className: 'bg-blue-500 text-white p-2 font-bold' }, 'Grade'),
+                ...subjects.map((subject, i) =>
                   React.createElement(
                     'div',
-                    { className: `p-2 font-semibold flex items-center text-sm grade-${rowKey.split('-')[0].toLowerCase().replace(/\dth/, '')}` },
-                    rowKey
-                  ),
-                  grid.rowBased[rowKey].map((grade, col) =>
-                    React.createElement(
-                      'div',
-                      {
-                        key: col,
-                        onMouseEnter: () => handleCellHover(rowKey, col),
-                        onMouseLeave: handleCellLeave,
-                        className: `grid-cell p-1 border border-gray-300 cursor-pointer transition-colors relative grade-${rowKey.split('-')[0].toLowerCase().replace(/\dth/, '')} flex items-center justify-center text-sm`
-                      },
-                      activeCell && activeCell.key === rowKey && activeCell.col === col
-                        ? React.createElement(
-                            'div',
-                            { className: 'absolute inset-0 grid grid-cols-4 grid-rows-4 gap-0.5 p-0.5 bg-[var(--cell-bg)] z-50 grade-selector' },
-                            grades.map(g =>
-                              React.createElement(
-                                'div',
-                                {
-                                  key: g,
-                                  onClick: () => handleSelectGrade(rowKey, col, g),
-                                  className: 'flex items-center justify-center text-[10px] hover:bg-[var(--cell-hover)] cursor-pointer'
-                                },
-                                g
-                              )
-                            )
-                          )
-                        : grade || ""
-                    )
+                    { key: i, className: 'bg-blue-500 text-white p-2 text-center font-bold text-xs' },
+                    subject
                   )
-                );
-              })
+                ),
+                React.createElement('div', { className: 'bg-gray-200 p-2 font-bold text-xs' }, 'Earned/Req.'),
+                ...subjects.map((subject, i) =>
+                  React.createElement(
+                    'div',
+                    {
+                      key: i,
+                      className: `p-2 text-center text-xs ${(earnedCredits[subject] || 0) >= requiredCredits24[subject] ? 'bg-green-200' : 'bg-gray-100'}`
+                    },
+                    `${(earnedCredits[subject] || 0).toFixed(2)}/${requiredCredits24[subject].toFixed(2)}`
+                  )
+                ),
+                ...(gridLayout === "stacked"
+                  ? Object.keys(grid.stacked).map(gradeLevel => {
+                      console.log(`Rendering stacked mode for ${gradeLevel}:`, grid.stacked[gradeLevel]);
+                      return React.createElement(
+                        React.Fragment,
+                        { key: gradeLevel },
+                        React.createElement(
+                          'div',
+                          { className: `p-2 font-semibold flex items-center text-sm grade-${gradeLevel.toLowerCase().replace(/\dth/, '')}` },
+                          gradeLevel
+                        ),
+                        grid.stacked[gradeLevel].map((gradeArray, col) =>
+                          React.createElement(
+                            'div',
+                            {
+                              key: col,
+                              onMouseEnter: () => handleCellHover(gradeLevel, col),
+                              onMouseLeave: handleCellLeave,
+                              className: `grid-cell p-1 border border-gray-300 cursor-pointer transition-colors relative grade-${gradeLevel.toLowerCase().replace(/\dth/, '')} flex items-center justify-center text-sm`
+                            },
+                            activeCell && activeCell.key === gradeLevel && activeCell.col === col
+                              ? React.createElement(
+                                  'div',
+                                  { className: 'absolute inset-0 grid grid-cols-4 grid-rows-4 gap-0.5 p-0.5 bg-[var(--cell-bg)] z-50 grade-selector' },
+                                  grades.map(g =>
+                                    React.createElement(
+                                      'div',
+                                      {
+                                        key: g,
+                                        onClick: () => handleSelectGrade(gradeLevel, col, g),
+                                        className: 'flex items-center justify-center text-[10px] hover:bg-[var(--cell-hover)] cursor-pointer'
+                                      },
+                                      g
+                                    )
+                                  )
+                                )
+                              : React.createElement(
+                                  'div',
+                                  { className: 'grade-stack' },
+                                  gradeArray.map((grade, i) =>
+                                    React.createElement('span', { key: i }, grade || "")
+                                  )
+                                )
+                          )
+                        )
+                      );
+                    })
+                  : rowBasedKeys.map(rowKey => {
+                      console.log(`Rendering row-based mode for ${rowKey}:`, grid.rowBased[rowKey]);
+                      return React.createElement(
+                        React.Fragment,
+                        { key: rowKey },
+                        React.createElement(
+                          'div',
+                          { className: `p-2 font-semibold flex items-center text-sm grade-${rowKey.split('-')[0].toLowerCase().replace(/\dth/, '')}` },
+                          rowKey
+                        ),
+                        grid.rowBased[rowKey].map((grade, col) =>
+                          React.createElement(
+                            'div',
+                            {
+                              key: col,
+                              onMouseEnter: () => handleCellHover(rowKey, col),
+                              onMouseLeave: handleCellLeave,
+                              className: `grid-cell p-1 border border-gray-300 cursor-pointer transition-colors relative grade-${rowKey.split('-')[0].toLowerCase().replace(/\dth/, '')} flex items-center justify-center text-sm`,
+                              'data-grade': grade || ""
+                            },
+                            activeCell && activeCell.key === rowKey && activeCell.col === col
+                              ? React.createElement(
+                                  'div',
+                                  { className: 'absolute inset-0 grid grid-cols-4 grid-rows-4 gap-0.5 p-0.5 bg-[var(--cell-bg)] z-50 grade-selector' },
+                                  grades.map(g =>
+                                    React.createElement(
+                                      'div',
+                                      {
+                                        key: g,
+                                        onClick: () => handleSelectGrade(rowKey, col, g),
+                                        className: 'flex items-center justify-center text-[10px] hover:bg-[var(--cell-hover)] cursor-pointer'
+                                      },
+                                      g
+                                    )
+                                  )
+                                )
+                              : null
+                          )
+                        )
+                      );
+                    })
+                )
+              ]
         )
       ),
       React.createElement(

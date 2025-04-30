@@ -11,30 +11,12 @@ const passingGrades = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "
 
 const subjects = ["LA", "MA", "SC", "SS", "GOV", "Art", "PE", "CTE", "HE", "FL", "EL", "EL2", "DS"];
 
-const subjectDescriptions = {
-  "LA": "Language Arts",
-  "MA": "Mathematics",
-  "SC": "Science",
-  "SS": "Social Studies",
-  "GOV": "Government and Citizenship",
-  "Art": "Fine Arts",
-  "PE": "Physical Education",
-  "CTE": "Career and Technical Education",
-  "HE": "Health Education",
-  "FL": "Financial Literacy",
-  "EL": "Electives (1)",
-  "EL2": "Electives (2)",
-  "DS": "Digital Studies",
-  "Earned/Req.": "Earned Credits / Required Credits",
-  "Total Credits": "Total Credits Earned per Grade Level"
-};
-
 const requiredCredits24 = {
   "LA": 4.0, "MA": 3.0, "SC": 3.0, "SS": 2.5, "GOV": 0.5, "Art": 1.5, "PE": 1.5, "CTE": 1.0, "HE": 0.5, "FL": 0.5, "EL": 2.75, "EL2": 2.75, "DS": 0.5
 };
 
 const requiredCredits27 = {
-  "LA": 4.0, "MA": 3.0, "SC": 3.0, "SS": 2.5, "GOV": 0.5, "Art": 1.5, "PE": 1.5, "CTE": 1.0, "HE": 0.5, "FL": 0.5, "EL": 4.25, "EL2": 4.25, "DS": 0.5
+  "LA": 4.0, "MA": 3.0, "SC": 3.0, "SS": 2.5, "GOV": 0.5, "Art": 1.5, "PE": 1.5, "CTE": 1.0, "HE": 0.5, "FL": 0.5, "EL": 4.0, "EL2": 4.0, "DS": 0.5
 };
 
 const creditValues = subjects.reduce((acc, subject) => {
@@ -394,7 +376,7 @@ const App = () => {
           }
 
           newGrid.stacked[level][col] = [...currentGrades];
-          slotsToFill -= slotsToAddCOMP;
+          slotsToFill -= slotsToAdd;
           currentLevelIndex++;
         }
       });
@@ -590,9 +572,9 @@ const App = () => {
       gridHtml = `
         <div class="grid">
           <div>Grade</div>
-          ${subjects.map(subject => `<div title="${subjectDescriptions[subject]}">${subject}</div>`).join('')}
-          <div title="${subjectDescriptions["Earned/Req."]}">Earned/Req.</div>
-          <div title="${subjectDescriptions["Total Credits"]}">Total Credits</div>
+          ${subjects.map(subject => `<div>${subject}</div>`).join('')}
+          <div>Earned/Req.</div>
+          <div>Total Credits</div>
           ${subjects.map(subject => `
             <div class="${(earnedCredits[subject] || 0) >= (creditOption === "24" ? requiredCredits24[subject] : requiredCredits27[subject]) ? 'bg-green-200' : 'bg-gray-100'}">
               ${(earnedCredits[subject] || 0).toFixed(2)}/${(creditOption === "24" ? requiredCredits24[subject] : requiredCredits27[subject]).toFixed(2)}
@@ -616,9 +598,9 @@ const App = () => {
       gridHtml = `
         <div class="grid">
           <div>Grade</div>
-          ${subjects.map(subject => `<div title="${subjectDescriptions[subject]}">${subject}</div>`).join('')}
-          <div title="${subjectDescriptions["Earned/Req."]}">Earned/Req.</div>
-          <div title="${subjectDescriptions["Total Credits"]}">Total Credits</div>
+          ${subjects.map(subject => `<div>${subject}</div>`).join('')}
+          <div>Earned/Req.</div>
+          <div>Total Credits</div>
           ${subjects.map(subject => `
             <div class="${(earnedCredits[subject] || 0) >= (creditOption === "24" ? requiredCredits24[subject] : requiredCredits27[subject]) ? 'bg-green-200' : 'bg-gray-100'}">
               ${(earnedCredits[subject] || 0).toFixed(2)}/${(creditOption === "24" ? requiredCredits24[subject] : requiredCredits27[subject]).toFixed(2)}
@@ -643,12 +625,12 @@ const App = () => {
         <div class="grid grid-transposed">
           <div>Subject</div>
           ${Object.keys(grid.transposed[subjects[0]]).map(level => `<div>${level}</div>`).join('')}
-          <div title="${subjectDescriptions["Earned/Req."]}">Earned/Req.</div>
+          <div>Earned/Req.</div>
           ${Object.keys(grid.transposed[subjects[0]]).map((_, i) => `
             <div class="bg-gray-200">-</div>
           `).join('')}
           ${subjects.map(subject => `
-            <div class="bg-blue-500 text-white p-2 text-center font-bold text-xs" title="${subjectDescriptions[subject]}">${subject}</div>
+            <div class="bg-blue-500 text-white p-2 text-center font-bold text-xs">${subject}</div>
             ${Object.keys(grid.transposed[subject]).map(level => `
               <div class="grade-${level.toLowerCase().replace(/\dth/, '')} grade-stack">
                 ${grid.transposed[subject][level].map(grade => `<span>${grade || ""}</span>`).join('')}
@@ -768,7 +750,7 @@ const App = () => {
         { className: 'flex justify-center mb-8' },
         React.createElement(
           'div',
-          { className: `grid ${gridLayout === "rowBased" ? "grid-row-based" : gridLayout === "transposed" ? "grid-transposed" : ""} ${gridLayout === "transposed" ? "grid-cols-[60px_repeat(5,60px)]" : "grid-cols-[60px_repeat(" + (subjects.length) + ",60px)_100px_80px]"} gap-1 w-fit` },
+          { className: `grid ${gridLayout === "rowBased" ? "grid-row-based" : gridLayout === "transposed" ? "grid-transposed" : ""} ${gridLayout === "transposed" ? "grid-cols-[60px_repeat(5,60px)]" : "grid-cols-[60px_repeat(" + (subjects.length + 1) + ",60px)]"} gap-1 w-fit` },
           gridLayout === "transposed"
             ? [
                 React.createElement('div', { className: 'bg-blue-500 text-white p-2 font-bold' }, 'Subject'),
@@ -779,7 +761,7 @@ const App = () => {
                     level
                   )
                 ),
-                React.createElement('div', { className: 'bg-gray-200 p-2 font-bold text-xs earned-req-header', title: subjectDescriptions["Earned/Req."] }, 'Earned/Req.'),
+                React.createElement('div', { className: 'bg-gray-200 p-2 font-bold text-xs' }, 'Earned/Req.'),
                 ...Object.keys(grid.transposed[subjects[0]]).map((_, i) =>
                   React.createElement(
                     'div',
@@ -791,7 +773,7 @@ const App = () => {
                   [
                     React.createElement(
                       'div',
-                      { className: 'bg-blue-500 text-white p-2 text-center font-bold text-xs', title: subjectDescriptions[subject] },
+                      { className: 'bg-blue-500 text-white p-2 text-center font-bold text-xs' },
                       subject
                     ),
                     ...Object.keys(grid.transposed[subject]).map((level, col) =>
@@ -843,12 +825,12 @@ const App = () => {
                 ...subjects.map((subject, i) =>
                   React.createElement(
                     'div',
-                    { key: i, className: 'bg-blue-500 text-white p-2 text-center font-bold text-xs', title: subjectDescriptions[subject] },
+                    { key: i, className: 'bg-blue-500 text-white p-2 text-center font-bold text-xs' },
                     subject
                   )
                 ),
-                React.createElement('div', { className: 'bg-gray-200 p-2 font-bold text-xs earned-req-header', title: subjectDescriptions["Earned/Req."] }, 'Earned/Req.'),
-                React.createElement('div', { className: 'bg-gray-200 p-2 font-bold text-xs total-credits-header', title: subjectDescriptions["Total Credits"] }, 'Total Credits'),
+                React.createElement('div', { className: 'bg-gray-200 p-2 font-bold text-xs' }, 'Earned/Req.'),
+                React.createElement('div', { className: 'bg-gray-200 p-2 font-bold text-xs' }, 'Total Credits'),
                 ...subjects.map((subject, i) =>
                   React.createElement(
                     'div',

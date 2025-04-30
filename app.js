@@ -11,17 +11,17 @@ const gpaMap = {
 // Passing grades for random fill
 const passingGrades = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", "P", "P+"];
 
-// Subjects by grade level
-const subjects = ["LA", "MA", "SC", "SS", "GOV", "Art", "PE", "CTE", "HE", "FL", "EL"];
+// Subjects by grade level, added EL2
+const subjects = ["LA", "MA", "SC", "SS", "GOV", "Art", "PE", "CTE", "HE", "FL", "EL", "EL2"];
 
-// Required credits for graduation (24 credits)
+// Required credits for graduation (24 credits), split EL and EL2
 const requiredCredits24 = {
-  "LA": 4.0, "MA": 3.0, "SC": 3.0, "SS": 3.0, "GOV": 0.5, "Art": 1.5, "PE": 2.0, "CTE": 1.0, "HE": 0.5, "FL": 0.5, "EL": 5.0
+  "LA": 4.0, "MA": 3.0, "SC": 3.0, "SS": 3.0, "GOV": 0.5, "Art": 1.5, "PE": 2.0, "CTE": 1.0, "HE": 0.5, "FL": 0.5, "EL": 2.5, "EL2": 2.5
 };
 
-// Required credits for graduation (27 credits)
+// Required credits for graduation (27 credits), split EL and EL2
 const requiredCredits27 = {
-  "LA": 4.0, "MA": 3.0, "SC": 3.0, "SS": 3.0, "GOV": 0.5, "Art": 1.5, "PE": 2.0, "CTE": 1.0, "HE": 0.5, "FL": 0.5, "EL": 8.0
+  "LA": 4.0, "MA": 3.0, "SC": 3.0, "SS": 3.0, "GOV": 0.5, "Art": 1.5, "PE": 2.0, "CTE": 1.0, "HE": 0.5, "FL": 0.5, "EL": 4.0, "EL2": 4.0
 };
 
 // Credit value per grade (0.25 for all subjects)
@@ -301,7 +301,7 @@ const App = () => {
               totalGPA += gpaMap[grade] * creditValue;
               totalCourses += creditValue;
             }
-          }
+          });
         });
       });
     }

@@ -574,7 +574,7 @@ const App = () => {
           <div>Grade</div>
           ${subjects.map(subject => `<div>${subject}</div>`).join('')}
           <div>Earned/Req.</div>
-          <div>Total Credits</div>
+          <div>Total/Credits</div>
           ${subjects.map(subject => `
             <div class="${(earnedCredits[subject] || 0) >= (creditOption === "24" ? requiredCredits24[subject] : requiredCredits27[subject]) ? 'bg-green-200' : 'bg-gray-100'}">
               ${(earnedCredits[subject] || 0).toFixed(2)}/${(creditOption === "24" ? requiredCredits24[subject] : requiredCredits27[subject]).toFixed(2)}

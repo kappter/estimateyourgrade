@@ -12,11 +12,11 @@ const passingGrades = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "
 const subjects = ["LA", "MA", "SC", "SS", "GOV", "Art", "PE", "CTE", "HE", "FL", "EL", "EL2", "DS"];
 
 const requiredCredits24 = {
-  "LA": 4.0, "MA": 3.0, "SC": 3.0, "SS": 3.0, "GOV": 0.5, "Art": 1.5, "PE": 1.5, "CTE": 1.0, "HE": 0.5, "FL": 0.5, "EL": 2.75, "EL2": 2.75, "DS": 0.5
+  "LA": 4.0, "MA": 3.0, "SC": 3.0, "SS": 2.5, "GOV": 0.5, "Art": 1.5, "PE": 1.5, "CTE": 1.0, "HE": 0.5, "FL": 0.5, "EL": 2.75, "EL2": 2.75, "DS": 0.5
 };
 
 const requiredCredits27 = {
-  "LA": 4.0, "MA": 3.0, "SC": 3.0, "SS": 3.0, "GOV": 0.5, "Art": 1.5, "PE": 1.5, "CTE": 1.0, "HE": 0.5, "FL": 0.5, "EL": 4.0, "EL2": 4.0, "DS": 0.5
+  "LA": 4.0, "MA": 3.0, "SC": 3.0, "SS": 2.5, "GOV": 0.5, "Art": 1.5, "PE": 1.5, "CTE": 1.0, "HE": 0.5, "FL": 0.5, "EL": 4.0, "EL2": 4.0, "DS": 0.5
 };
 
 const creditValues = subjects.reduce((acc, subject) => {

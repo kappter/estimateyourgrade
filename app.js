@@ -110,7 +110,7 @@ const App = () => {
   };
 
   // Calculate total credits, credits needed, and GPA
-  const calculateStats = () => {
+  const calculateStats = React.useCallback(() => {
     const requiredCredits = creditOption === "24" ? requiredCredits24 : requiredCredits27;
     const earnedCredits = {};
     let totalCredits = 0;
@@ -124,9 +124,11 @@ const App = () => {
             if (grade) {
               const subject = subjects[col];
               const creditValue = creditValues[subject];
-              earnedCredits[subject] = (earnedCredits[subject] || 0) + creditValue;
-              totalCredits += creditValue;
-              if (grade !== "P" && grade !== "P+") {
+              if (grade !== "F") { // Exclude F from credits
+                earnedCredits[subject] = (earnedCredits[subject] || 0) + creditValue;
+                totalCredits += creditValue;
+              }
+              if (grade !== "P" && grade !== "P+") { // Include F in GPA
                 totalGPA += gpaMap[grade] * creditValue;
                 totalCourses += creditValue;
               }
@@ -140,9 +142,11 @@ const App = () => {
           if (grade) {
             const subject = subjects[col];
             const creditValue = creditValues[subject];
-            earnedCredits[subject] = (earnedCredits[subject] || 0) + creditValue;
-            totalCredits += creditValue;
-            if (grade !== "P" && grade !== "P+") {
+            if (grade !== "F") { // Exclude F from credits
+              earnedCredits[subject] = (earnedCredits[subject] || 0) + creditValue;
+              totalCredits += creditValue;
+            }
+            if (grade !== "P" && grade !== "P+") { // Include F in GPA
               totalGPA += gpaMap[grade] * creditValue;
               totalCourses += creditValue;
             }
@@ -160,9 +164,9 @@ const App = () => {
 
     const gpa = totalCourses > 0 ? (totalGPA / totalCourses).toFixed(2) : 0;
     return { totalCredits, creditsNeeded, gpa };
-  };
+  }, [grid, creditOption, gridLayout]);
 
-  const { totalCredits, creditsNeeded, gpa } = calculateStats();
+  const { totalCredits, creditsNeeded, gpa } = React.useMemo(() => calculateStats(), [calculateStats]);
 
   const handlePrint = () => {
     const now = new Date();
@@ -326,6 +330,7 @@ const App = () => {
                 <React.Fragment key={rowKey}>
                   <div className={`p-2 font-semibold flex items-center text-sm grade-${rowKey.split('-')[0].toLowerCase().replace(/\dth/, '')}`}>
                     {rowKey}
+1724
                   </div>
                   {grid.rowBased[rowKey].map((grade, col) => (
                     <div
@@ -362,7 +367,7 @@ const App = () => {
         <p>Total Credits: {totalCredits.toFixed(2)}</p>
         <p>GPA: {gpa}</p>
         <p>Data Source: <a href="https://www.schools.utah.gov/curr/graduationrequirements" target="_blank" rel="noopener noreferrer">Utah State Board of Education Graduation Requirements</a></p>
-        <p className="note">Note: 'P' (Pass) and 'P+' grant credit but do not affect GPA.</p>
+        <p className="note">Note: 'P' (Pass) and 'P+' grant credit but do not affect GPA. 'F' affects GPA but does not grant credit.</p>
         <p className="copyright">© 2025 All Rights Reserved</p>
       </footer>
     </div>

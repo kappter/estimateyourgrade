@@ -8,7 +8,7 @@ const gpaMap = {
   "C": 2.0, "C-": 1.7, "D+": 1.3, "D": 1.0, "D-": 0.7, "F": 0.0
 };
 
-// Subjects by grade level, with FL as a single slot
+// Subjects by grade level
 const subjects = ["LA", "MA", "SC", "SS", "GOV", "Art", "PE", "CTE", "HE", "FL", "EL"];
 
 // Required credits for graduation (24 credits)
@@ -182,7 +182,7 @@ const App = () => {
     setGrid(newGrid);
   };
 
-  // Calculate total credits, credits needed, and GPA
+  // Calculate total credits, credits needed, GPA, and earned credits per subject
   const calculateStats = React.useCallback(() => {
     const requiredCredits = creditOption === "24" ? requiredCredits24 : requiredCredits27;
     const earnedCredits = {};
@@ -236,10 +236,10 @@ const App = () => {
     });
 
     const gpa = totalCourses > 0 ? (totalGPA / totalCourses).toFixed(2) : 0;
-    return { totalCredits, creditsNeeded, gpa };
+    return { totalCredits, creditsNeeded, gpa, earnedCredits };
   }, [grid, creditOption, gridLayout]);
 
-  const { totalCredits, creditsNeeded, gpa } = React.useMemo(() => calculateStats(), [calculateStats]);
+  const { totalCredits, creditsNeeded, gpa, earnedCredits } = React.useMemo(() => calculateStats(), [calculateStats]);
 
   const handlePrint = () => {
     const now = new Date();
@@ -261,6 +261,12 @@ const App = () => {
         <div class="grid">
           <div>Grade</div>
           ${subjects.map(subject => `<div>${subject}</div>`).join('')}
+          <div>Earned/Req.</div>
+          ${subjects.map(subject => `
+            <div class="${(earnedCredits[subject] || 0) >= requiredCredits24[subject] ? 'bg-green-200' : 'bg-gray-100'}">
+              ${(earnedCredits[subject] || 0).toFixed(2)}/${requiredCredits24[subject].toFixed(2)}
+            </div>
+          `).join('')}
           ${Object.keys(grid.stacked).map(gradeLevel => `
             <div class="grade-${gradeLevel.toLowerCase().replace(/\dth/, '')}">${gradeLevel}</div>
             ${grid.stacked[gradeLevel].map(gradeArray => `
@@ -276,6 +282,12 @@ const App = () => {
         <div class="grid">
           <div>Grade</div>
           ${subjects.map(subject => `<div>${subject}</div>`).join('')}
+          <div>Earned/Req.</div>
+          ${subjects.map(subject => `
+            <div class="${(earnedCredits[subject] || 0) >= requiredCredits24[subject] ? 'bg-green-200' : 'bg-gray-100'}">
+              ${(earnedCredits[subject] || 0).toFixed(2)}/${requiredCredits24[subject].toFixed(2)}
+            </div>
+          `).join('')}
           ${Object.keys(grid.rowBased).map(rowKey => `
             <div class="grade-${rowKey.split('-')[0].toLowerCase().replace(/\dth/, '')}">${rowKey}</div>
             ${grid.rowBased[rowKey].map(grade => `
@@ -359,6 +371,17 @@ const App = () => {
             {subjects.map((subject, i) => (
               <div key={i} className="bg-blue-500 text-white p-2 text-center font-bold text-xs">
                 {subject}
+              </div>
+            ))}
+            <div className="bg-gray-200 p-2 font-bold text-xs">Earned/Req.</div>
+            {subjects.map((subject, i) => (
+              <div
+                key={i}
+                className={`p-2 text-center text-xs ${
+                  (earnedCredits[subject] || 0) >= requiredCredits24[subject] ? 'bg-green-200' : 'bg-gray-100'
+                }`}
+              >
+                {(earnedCredits[subject] || 0).toFixed(2)}/{requiredCredits24[subject].toFixed(2)}
               </div>
             ))}
 

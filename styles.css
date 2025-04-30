@@ -93,6 +93,7 @@ main {
 .grid-cell {
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
   position: relative;
+  height: 60px; /* Increased height for stacked layout */
 }
 
 .grid-cell:hover {
@@ -144,12 +145,17 @@ main {
 
 /* Style for stacked grades */
 .grid-cell .grade-stack {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 2px;
   align-items: center;
-  justify-content: center;
-  font-size: 10px;
+  justify-items: center;
+  font-size: 12px; /* Slightly larger for readability */
   line-height: 1.2;
+  width: 100%;
+  height: 100%;
+  padding: 2px;
 }
 
 /* Category colors for grade levels */
@@ -176,6 +182,13 @@ main {
 /* Smaller row height for row-based model */
 .grid-row-based .grid-cell {
   height: 30px;
+}
+
+/* Ensure row-based grades are centered */
+.grid-row-based .grid-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Print-specific styles */
@@ -256,10 +269,12 @@ main {
 
   /* Style for stacked grades in print */
   .grid > div.grade-stack {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 2px;
     align-items: center;
-    justify-content: center;
+    justify-items: center;
     font-size: 8pt;
     line-height: 1.2;
   }

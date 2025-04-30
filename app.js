@@ -13,12 +13,12 @@ const subjects = ["LA", "MA", "SC", "SS", "GOV", "Art", "PE", "CTE", "HE", "FL",
 
 // Required credits for graduation (24 credits)
 const requiredCredits24 = {
-  "LA": 4, "MA": 4, "SC": 3, "SS": 3, "GOV": 2, "Art": 1, "PE": 1, "CTE": 1, "HE": 1, "FL": 0.5, "EL": 4
+  "LA": 4.0, "MA": 3.0, "SC": 3.0, "SS": 3.0, "GOV": 0.5, "Art": 1.5, "PE": 2.0, "CTE": 1.0, "HE": 0.5, "FL": 0.5, "EL": 5.0
 };
 
 // Required credits for graduation (27 credits)
 const requiredCredits27 = {
-  "LA": 4, "MA": 4, "SC": 3, "SS": 3, "GOV": 2, "Art": 1, "PE": 1, "CTE": 1, "HE": 1, "FL": 0.5, "EL": 7
+  "LA": 4.0, "MA": 3.0, "SC": 3.0, "SS": 3.0, "GOV": 0.5, "Art": 1.5, "PE": 2.0, "CTE": 1.0, "HE": 0.5, "FL": 0.5, "EL": 8.0
 };
 
 // Credit value per grade (0.25 for all subjects)
@@ -156,9 +156,9 @@ const App = () => {
     }
 
     let creditsNeeded = 0;
-    Object.keys(requiredCredits).forEach((subject) => {
-      const earned = earnedCredits[subject] || 0;
-      const needed = requiredCredits[subject] - earned;
+    Object.keys(requiredCredits).forEach((subjectIt) => {
+      const earned = earnedCredits[subjectIt] || 0;
+      const needed = requiredCredits[subjectIt] - earned;
       if (needed > 0) creditsNeeded += needed;
     });
 
@@ -330,7 +330,6 @@ const App = () => {
                 <React.Fragment key={rowKey}>
                   <div className={`p-2 font-semibold flex items-center text-sm grade-${rowKey.split('-')[0].toLowerCase().replace(/\dth/, '')}`}>
                     {rowKey}
-1724
                   </div>
                   {grid.rowBased[rowKey].map((grade, col) => (
                     <div

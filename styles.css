@@ -37,6 +37,11 @@ body {
 
 main {
   flex: 1;
+  background-color: #ffffff; /* White background for middle content area */
+  margin: 1rem 0;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px var(--shadow-color);
 }
 
 .navbar {
@@ -93,14 +98,13 @@ main {
 .grid-cell {
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
   position: relative;
-  height: 60px; /* Increased height for stacked layout */
+  height: 60px;
 }
 
 .grid-cell:hover {
   box-shadow: 0 0 8px var(--shadow-color);
 }
 
-/* Ensure grid is centered and fits viewport */
 .container {
   max-width: 100%;
   padding-left: 1rem;
@@ -117,7 +121,6 @@ main {
   width: fit-content;
 }
 
-/* Style for grade selector grid */
 .grid-cell .grade-selector {
   position: absolute;
   inset: 0;
@@ -143,7 +146,6 @@ main {
   cursor: pointer;
 }
 
-/* Style for stacked grades */
 .grid-cell .grade-stack {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -151,14 +153,13 @@ main {
   gap: 2px;
   align-items: center;
   justify-items: center;
-  font-size: 12px; /* Slightly larger for readability */
+  font-size: 12px;
   line-height: 1.2;
   width: 100%;
   height: 100%;
   padding: 2px;
 }
 
-/* Category colors for grade levels */
 .grade-9 {
   background-color: #FFCE19; /* Yellow */
 }
@@ -179,19 +180,16 @@ main {
   background-color: #4D5180; /* Muted purple-blue */
 }
 
-/* Smaller row height for row-based model */
 .grid-row-based .grid-cell {
   height: 30px;
 }
 
-/* Ensure row-based grades are centered */
 .grid-row-based .grid-cell {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* Style for earned/required row */
 .bg-gray-100 {
   background-color: #f3f4f6;
 }
@@ -200,7 +198,6 @@ main {
   background-color: #bbf7d0;
 }
 
-/* Print-specific styles */
 @media print {
   @page {
     size: landscape;
@@ -222,6 +219,7 @@ main {
   main {
     margin: 0;
     padding: 1cm;
+    background-color: #ffffff;
   }
 
   .container {
@@ -241,9 +239,9 @@ main {
 
   .grid {
     display: grid;
-    grid-template-columns: 60px repeat(12, 60px); /* Updated for 12 subjects */
+    grid-template-columns: 60px repeat(12, 60px);
     gap: 1px;
-    background-color: #D9C88E;
+    background-color: #ffffff;
     border: 2px solid #4D5180;
     font-size: 10pt;
   }
@@ -261,20 +259,18 @@ main {
     color: #FFCE19;
   }
 
-  .grid > div:nth-child(-n+13) { /* Updated for 13 columns (Grade + 12 subjects) */
+  .grid > div:nth-child(-n+13) {
     background-color: #434DBF;
     color: #FFCE19;
     font-weight: bold;
   }
 
-  /* Apply grade level colors */
   .grid > div.grade-9 { background-color: #FFCE19; }
   .grid > div.grade-10 { background-color: #AA954A; }
   .grid > div.grade-11 { background-color: #192CFF; }
   .grid > div.grade-12 { background-color: #434DBF; }
   .grid > div.grade-other { background-color: #4D5180; }
 
-  /* Style for stacked grades in print */
   .grid > div.grade-stack {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -286,7 +282,6 @@ main {
     line-height: 1.2;
   }
 
-  /* Style for earned/required row in print */
   .grid > div.bg-gray-100 {
     background-color: #f3f4f6;
   }

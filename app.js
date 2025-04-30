@@ -75,7 +75,51 @@ const App = () => {
   };
 
   const handleGridLayoutChange = (e) => {
-    setGridLayout(e.target.value);
+    const newLayout = e.target.value;
+    const newGrid = { ...grid };
+
+    if (newLayout === "stacked" && gridLayout === "rowBased") {
+      // Convert from row-based to stacked
+      Object.keys(newGrid.stacked).forEach(level => {
+        newGrid.stacked[level] = Array(subjects.length).fill().map(() => ["", "", "", ""]);
+      });
+
+      const gradeLevels = ["9th", "10th", "11th", "12th", "Other"];
+      gradeLevels.forEach((level, levelIndex) => {
+        const rows = [`${level}-1`, `${level}-2`, `${level}-3`, `${level}-4`];
+        subjects.forEach((subject, col) => {
+          let gradeIndex = 0;
+          rows.forEach(row => {
+            const grade = grid.rowBased[row][col];
+            if (grade && gradeIndex < 4) {
+              newGrid.stacked[level][col][gradeIndex] = grade;
+              gradeIndex++;
+            }
+          });
+        });
+      });
+    } else if (newLayout === "rowBased" && gridLayout === "stacked") {
+      // Convert from stacked to row-based
+      Object.keys(newGrid.rowBased).forEach(row => {
+        newGrid.rowBased[row] = Array(subjects.length).fill("");
+      });
+
+      const gradeLevels = ["9th", "10th", "11th", "12th", "Other"];
+      gradeLevels.forEach((level, levelIndex) => {
+        const rows = [`${level}-1`, `${level}-2`, `${level}-3`, `${level}-4`];
+        subjects.forEach((subject, col) => {
+          const grades = grid.stacked[level][col];
+          grades.forEach((grade, i) => {
+            if (grade && i < 4) {
+              newGrid.rowBased[rows[i]][col] = grade;
+            }
+          });
+        });
+      });
+    }
+
+    setGrid(newGrid);
+    setGridLayout(newLayout);
   };
 
   const handleCellHover = (key, col) => {
@@ -475,8 +519,9 @@ const App = () => {
             )
           ),
           gridLayout === "stacked"
-            ? Object.keys(grid.stacked).map(gradeLevel =>
-                React.createElement(
+            ? Object.keys(grid.stacked).map(gradeLevel => {
+                console.log(`Rendering stacked mode for ${gradeLevel}:`, grid.stacked[gradeLevel]);
+                return React.createElement(
                   React.Fragment,
                   { key: gradeLevel },
                   React.createElement(
@@ -518,10 +563,11 @@ const App = () => {
                           )
                     )
                   )
-                )
-              )
-            : rowBasedKeys.map(rowKey =>
-                React.createElement(
+                );
+              })
+            : rowBasedKeys.map(rowKey => {
+                console.log(`Rendering row-based mode for ${rowKey}:`, grid.rowBased[rowKey]);
+                return React.createElement(
                   React.Fragment,
                   { key: rowKey },
                   React.createElement(
@@ -557,8 +603,8 @@ const App = () => {
                         : grade || ""
                     )
                   )
-                )
-              )
+                );
+              })
         )
       ),
       React.createElement(

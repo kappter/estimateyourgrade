@@ -526,6 +526,31 @@ const App = () => {
     return { totalCredits, creditsNeeded, gpa, earnedCredits };
   }, [grid, creditOption, gridLayout]);
 
+  const calculateTotalCreditsPerGradeLevel = (gradeLevel) => {
+    let totalCredits = 0;
+    if (gridLayout === "stacked") {
+      const gradeArray = grid.stacked[gradeLevel];
+      gradeArray.forEach(subjectGrades => {
+        subjectGrades.forEach(grade => {
+          if (grade && grade !== "F") {
+            totalCredits += 0.25; // Each passing grade contributes 0.25 credits
+          }
+        });
+      });
+    } else if (gridLayout === "rowBased") {
+      const rows = [`${gradeLevel}-1`, `${gradeLevel}-2`, `${gradeLevel}-3`, `${gradeLevel}-4`];
+      rows.forEach(rowKey => {
+        const row = grid.rowBased[rowKey];
+        row.forEach(grade => {
+          if (grade && grade !== "F") {
+            totalCredits += 0.25; // Each passing grade contributes 0.25 credits
+          }
+        });
+      });
+    }
+    return totalCredits.toFixed(2);
+  };
+
   const { totalCredits, creditsNeeded, gpa, earnedCredits } = React.useMemo(() => calculateStats(), [calculateStats]);
 
   const handlePrint = () => {
@@ -549,11 +574,13 @@ const App = () => {
           <div>Grade</div>
           ${subjects.map(subject => `<div>${subject}</div>`).join('')}
           <div>Earned/Req.</div>
+          <div>Total Credits</div>
           ${subjects.map(subject => `
             <div class="${(earnedCredits[subject] || 0) >= requiredCredits24[subject] ? 'bg-green-200' : 'bg-gray-100'}">
               ${(earnedCredits[subject] || 0).toFixed(2)}/${requiredCredits24[subject].toFixed(2)}
             </div>
           `).join('')}
+          <div class="bg-gray-200">-</div>
           ${Object.keys(grid.stacked).map(gradeLevel => `
             <div class="grade-${gradeLevel.toLowerCase().replace(/\dth/, '')}">${gradeLevel}</div>
             ${grid.stacked[gradeLevel].map(gradeArray => `
@@ -561,6 +588,9 @@ const App = () => {
                 ${gradeArray.map(grade => `<span>${grade || ""}</span>`).join('')}
               </div>
             `).join('')}
+            <div class="grade-${gradeLevel.toLowerCase().replace(/\dth/, '')}">
+              ${calculateTotalCreditsPerGradeLevel(gradeLevel)}
+            </div>
           `).join('')}
         </div>
       `;
@@ -570,16 +600,23 @@ const App = () => {
           <div>Grade</div>
           ${subjects.map(subject => `<div>${subject}</div>`).join('')}
           <div>Earned/Req.</div>
+          <div>Total Credits</div>
           ${subjects.map(subject => `
             <div class="${(earnedCredits[subject] || 0) >= requiredCredits24[subject] ? 'bg-green-200' : 'bg-gray-100'}">
               ${(earnedCredits[subject] || 0).toFixed(2)}/${requiredCredits24[subject].toFixed(2)}
             </div>
           `).join('')}
+          <div class="bg-gray-200">-</div>
           ${Object.keys(grid.rowBased).map(rowKey => `
             <div class="grade-${rowKey.split('-')[0].toLowerCase().replace(/\dth/, '')}">${rowKey}</div>
             ${grid.rowBased[rowKey].map(grade => `
               <div class="grade-${rowKey.split('-')[0].toLowerCase().replace(/\dth/, '')}">${grade || ""}</div>
             `).join('')}
+            ${rowKey.endsWith('-1') ? `
+              <div class="grade-${rowKey.split('-')[0].toLowerCase().replace(/\dth/, '')}" style="grid-row: span 4;">
+                ${calculateTotalCreditsPerGradeLevel(rowKey.split('-')[0])}
+              </div>
+            ` : ''}
           `).join('')}
         </div>
       `;
@@ -589,7 +626,7 @@ const App = () => {
           <div>Subject</div>
           ${Object.keys(grid.transposed[subjects[0]]).map(level => `<div>${level}</div>`).join('')}
           <div>Earned/Req.</div>
-          ${Object.keys(grid.transposed[subjects[0]]).map(level => `
+          ${Object.keys(grid.transposed[subjects[0]]).map((_, i) => `
             <div class="bg-gray-200">-</div>
           `).join('')}
           ${subjects.map(subject => `
@@ -713,7 +750,7 @@ const App = () => {
         { className: 'flex justify-center mb-8' },
         React.createElement(
           'div',
-          { className: `grid ${gridLayout === "rowBased" ? "grid-row-based" : gridLayout === "transposed" ? "grid-transposed" : ""} ${gridLayout === "transposed" ? "grid-cols-[60px_repeat(5,60px)]" : "grid-cols-[60px_repeat(" + subjects.length + ",60px)]"} gap-1 w-fit` },
+          { className: `grid ${gridLayout === "rowBased" ? "grid-row-based" : gridLayout === "transposed" ? "grid-transposed" : ""} ${gridLayout === "transposed" ? "grid-cols-[60px_repeat(5,60px)]" : "grid-cols-[60px_repeat(" + (subjects.length + 1) + ",60px)]"} gap-1 w-fit` },
           gridLayout === "transposed"
             ? [
                 React.createElement('div', { className: 'bg-blue-500 text-white p-2 font-bold' }, 'Subject'),
@@ -793,6 +830,7 @@ const App = () => {
                   )
                 ),
                 React.createElement('div', { className: 'bg-gray-200 p-2 font-bold text-xs' }, 'Earned/Req.'),
+                React.createElement('div', { className: 'bg-gray-200 p-2 font-bold text-xs' }, 'Total Credits'),
                 ...subjects.map((subject, i) =>
                   React.createElement(
                     'div',
@@ -802,6 +840,11 @@ const App = () => {
                     },
                     `${(earnedCredits[subject] || 0).toFixed(2)}/${requiredCredits24[subject].toFixed(2)}`
                   )
+                ),
+                React.createElement(
+                  'div',
+                  { className: 'bg-gray-200 p-2 text-center text-xs' },
+                  '-'
                 ),
                 ...(gridLayout === "stacked"
                   ? Object.keys(grid.stacked).map(gradeLevel => {
@@ -847,6 +890,11 @@ const App = () => {
                                   )
                                 )
                           )
+                        ),
+                        React.createElement(
+                          'div',
+                          { className: `p-2 text-center text-sm grade-${gradeLevel.toLowerCase().replace(/\dth/, '')}` },
+                          calculateTotalCreditsPerGradeLevel(gradeLevel)
                         )
                       );
                     })
@@ -888,7 +936,17 @@ const App = () => {
                                 )
                               : null
                           )
-                        )
+                        ),
+                        rowKey.endsWith('-1')
+                          ? React.createElement(
+                              'div',
+                              {
+                                className: `p-2 text-center text-sm grade-${rowKey.split('-')[0].toLowerCase().replace(/\dth/, '')}`,
+                                style: { gridRow: 'span 4' }
+                              },
+                              calculateTotalCreditsPerGradeLevel(rowKey.split('-')[0])
+                            )
+                          : null
                       );
                     })
                 )

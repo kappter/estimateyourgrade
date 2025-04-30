@@ -522,7 +522,7 @@ const App = () => {
       if (needed > 0) creditsNeeded += needed;
     });
 
-    const gpa = totalCourses > 0 ? (totalGPA / totalCourses).toFixed(2) : 0;
+    const gpa = totalCourses > 0 ? Number((totalGPA / totalCourses).toFixed(3)) : 0;
     return { totalCredits, creditsNeeded, gpa, earnedCredits };
   }, [grid, creditOption, gridLayout]);
 

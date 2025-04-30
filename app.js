@@ -120,7 +120,7 @@ const App = () => {
       const gradeLevels = ["9th", "10th", "11th", "12th", "Other"];
       subjects.forEach((subject, col) => {
         const slotsForSubject = (requiredCredits[subject] / 0.25);
-        let slotsToFill = Math.min(slotsForSubject, totalSlotsNeeded - slotsFilled);
+        let slotsToFill = slotsForSubject;
         let currentLevelIndex = 0;
 
         while (slotsToFill > 0 && currentLevelIndex < gradeLevels.length) {
@@ -133,14 +133,12 @@ const App = () => {
             const firstEmptyIndex = currentGrades.findIndex(g => !g);
             if (firstEmptyIndex !== -1) {
               currentGrades[firstEmptyIndex] = fillGrade;
+              slotsFilled++;
             }
           }
 
           newGrid.stacked[level][col] = [...currentGrades];
-          slotsFilled += slotsToAdd;
           slotsToFill -= slotsToAdd;
-
-          if (slotsToFill === 0) break;
           currentLevelIndex++;
         }
       });
@@ -189,7 +187,7 @@ const App = () => {
       const gradeLevels = ["9th", "10th", "11th", "12th", "Other"];
       subjects.forEach((subject, col) => {
         const slotsForSubject = (requiredCredits[subject] / 0.25);
-        let slotsToFill = Math.min(slotsForSubject, totalSlotsNeeded - slotsFilled);
+        let slotsToFill = slotsForSubject;
         let currentLevelIndex = 0;
 
         while (slotsToFill > 0 && currentLevelIndex < gradeLevels.length) {
@@ -203,14 +201,12 @@ const App = () => {
             if (firstEmptyIndex !== -1) {
               const randomGrade = passingGrades[Math.floor(Math.random() * passingGrades.length)];
               currentGrades[firstEmptyIndex] = randomGrade;
+              slotsFilled++;
             }
           }
 
           newGrid.stacked[level][col] = [...currentGrades];
-          slotsFilled += slotsToAdd;
           slotsToFill -= slotsToAdd;
-
-          if (slotsToFill === 0) break;
           currentLevelIndex++;
         }
       });

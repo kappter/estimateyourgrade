@@ -113,18 +113,24 @@ body {
   position: absolute;
   inset: 0;
   display: grid !important;
-  grid-template-columns: repeat(2, 1fr) !important;
-  grid-template-rows: repeat(8, 1fr) !important;
-  gap: 1px;
-  padding: 1px;
+  grid-template-columns: repeat(3, 1fr) !important; /* 3 columns */
+  grid-template-rows: repeat(5, 1fr) !important; /* 5 rows */
+  gap: 0.5px; /* Tighter gap */
+  padding: 0.5px; /* Tighter padding */
   background-color: var(--cell-bg);
+  max-height: 40px; /* Ensure it doesn’t stretch beyond the cell height */
+}
+
+.grade-other .grid-cell .grade-selector {
+  top: auto;
+  bottom: 100%; /* Position the selector above the cell for the "Other" row */
 }
 
 .grade-selector > div {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 10px; /* Smaller font size for a tighter fit */
   line-height: 1;
 }
 

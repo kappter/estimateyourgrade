@@ -12,11 +12,11 @@ const passingGrades = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "
 const subjects = ["LA", "MA", "SC", "SS", "GOV", "Art", "PE", "CTE", "HE", "FL", "EL", "EL2", "DS"];
 
 const requiredCredits24 = {
-  "LA": 4.0, "MA": 3.0, "SC": 3.0, "SS": 3.0, "GOV": 0.5, "Art": 1.5, "PE": 2.0, "CTE": 1.0, "HE": 0.5, "FL": 0.5, "EL": 2.5, "EL2": 2.5, "DS": 0.5
+  "LA": 4.0, "MA": 3.0, "SC": 3.0, "SS": 3.0, "GOV": 0.5, "Art": 1.5, "PE": 1.5, "CTE": 1.0, "HE": 0.5, "FL": 0.5, "EL": 2.75, "EL2": 2.75, "DS": 0.5
 };
 
 const requiredCredits27 = {
-  "LA": 4.0, "MA": 3.0, "SC": 3.0, "SS": 3.0, "GOV": 0.5, "Art": 1.5, "PE": 2.0, "CTE": 1.0, "HE": 0.5, "FL": 0.5, "EL": 4.0, "EL2": 4.0, "DS": 0.5
+  "LA": 4.0, "MA": 3.0, "SC": 3.0, "SS": 3.0, "GOV": 0.5, "Art": 1.5, "PE": 1.5, "CTE": 1.0, "HE": 0.5, "FL": 0.5, "EL": 4.0, "EL2": 4.0, "DS": 0.5
 };
 
 const creditValues = subjects.reduce((acc, subject) => {
@@ -574,7 +574,7 @@ const App = () => {
           <div>Grade</div>
           ${subjects.map(subject => `<div>${subject}</div>`).join('')}
           <div>Earned/Req.</div>
-          <div>Total/Credits</div>
+          <div>Total Credits</div>
           ${subjects.map(subject => `
             <div class="${(earnedCredits[subject] || 0) >= (creditOption === "24" ? requiredCredits24[subject] : requiredCredits27[subject]) ? 'bg-green-200' : 'bg-gray-100'}">
               ${(earnedCredits[subject] || 0).toFixed(2)}/${(creditOption === "24" ? requiredCredits24[subject] : requiredCredits27[subject]).toFixed(2)}

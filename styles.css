@@ -1,27 +1,27 @@
 :root {
-  --bg-color: #f5efe7; /* Light beige, earthy */
-  --text-color: #2e4a3d; /* Dark forest green */
-  --navbar-bg: #3a5f4a; /* Deep green */
-  --navbar-text: #e8f1e9; /* Pale green */
-  --footer-bg: #3a5f4a; /* Deep green */
-  --footer-text: #e8f1e9; /* Pale green */
+  --bg-color: #D9C88E; /* Lightened #AA954A */
+  --text-color: #4D5180; /* Muted purple-blue */
+  --navbar-bg: #434DBF; /* Dark blue */
+  --navbar-text: #FFCE19; /* Yellow */
+  --footer-bg: #434DBF; /* Dark blue */
+  --footer-text: #FFCE19; /* Yellow */
   --cell-bg: #ffffff; /* White for cells */
-  --cell-hover: #d4e4d9; /* Light green hover */
-  --accent-color: #6b8e9f; /* Sky blue */
-  --shadow-color: rgba(46, 74, 61, 0.2); /* Subtle green shadow */
+  --cell-hover: #687BFF; /* Lightened #192CFF */
+  --accent-color: #192CFF; /* Bright blue */
+  --shadow-color: rgba(77, 81, 128, 0.2); /* Subtle #4D5180 shadow */
 }
 
 [data-theme="dark"] {
-  --bg-color: #2e2e2e; /* Dark earthy brown */
-  --text-color: #d4e4d9; /* Light green */
-  --navbar-bg: #1a2b22; /* Darker green */
-  --navbar-text: #e8f1e9; /* Pale green */
-  --footer-bg: #1a2b22; /* Darker green */
-  --footer-text: #e8f1e9; /* Pale green */
-  --cell-bg: #3a3a3a; /* Dark gray for cells */
-  --cell-hover: #4a5f4e; /* Darker green hover */
-  --accent-color: #8ab0c3; /* Lighter sky blue */
-  --shadow-color: rgba(212, 228, 217, 0.2); /* Subtle light green shadow */
+  --bg-color: #3A3D66; /* Darkened #4D5180 */
+  --text-color: #FFCE19; /* Yellow */
+  --navbar-bg: #2F3791; /* Darkened #434DBF */
+  --navbar-text: #FFCE19; /* Yellow */
+  --footer-bg: #2F3791; /* Darkened #434DBF */
+  --footer-text: #FFCE19; /* Yellow */
+  --cell-bg: #2A2D4D; /* Darker shade of #4D5180 */
+  --cell-hover: #3E4FFF; /* Slightly lightened #192CFF */
+  --accent-color: #192CFF; /* Bright blue */
+  --shadow-color: rgba(255, 206, 25, 0.2); /* Subtle #FFCE19 shadow */
 }
 
 body {
@@ -160,23 +160,23 @@ main {
 
 /* Category colors for grade levels */
 .grade-9 {
-  background-color: #f8d7da; /* Light red */
+  background-color: #FFCE19; /* Yellow */
 }
 
 .grade-10 {
-  background-color: #d4edda; /* Light green */
+  background-color: #AA954A; /* Gold-brown */
 }
 
 .grade-11 {
-  background-color: #cce5ff; /* Light blue */
+  background-color: #192CFF; /* Bright blue */
 }
 
 .grade-12 {
-  background-color: #fff3cd; /* Light yellow */
+  background-color: #434DBF; /* Dark blue */
 }
 
 .grade-other {
-  background-color: #e2e3e5; /* Light gray */
+  background-color: #4D5180; /* Muted purple-blue */
 }
 
 /* Smaller row height for row-based model */
@@ -209,7 +209,7 @@ main {
 
   body {
     background-color: #ffffff;
-    color: #2e4a3d;
+    color: #4D5180;
     font-family: 'Arial', sans-serif;
     margin: 0;
     padding: 0;
@@ -229,24 +229,22 @@ main {
     width: 100%;
   }
 
-  /* Centered title for print */
   .print-title {
     text-align: center;
     font-size: 24pt;
     font-weight: bold;
-    color: #3a5f4a;
+    color: #434DBF;
     margin-bottom: 1cm;
-    border-bottom: 2px solid #6b8e9f;
+    border-bottom: 2px solid #192CFF;
     padding-bottom: 0.5cm;
   }
 
-  /* Grid styling for print */
   .grid {
     display: grid;
     grid-template-columns: 60px repeat(11, 60px);
     gap: 1px;
-    background-color: #d4e4d9;
-    border: 2px solid #2e4a3d;
+    background-color: #D9C88E;
+    border: 2px solid #4D5180;
     font-size: 10pt;
   }
 
@@ -254,27 +252,27 @@ main {
     background-color: #ffffff;
     padding: 4px;
     text-align: center;
-    border: 1px solid #2e4a3d;
+    border: 1px solid #4D5180;
   }
 
   .grid > div:first-child {
     font-weight: bold;
-    background-color: #6b8e9f;
-    color: #ffffff;
+    background-color: #434DBF;
+    color: #FFCE19;
   }
 
   .grid > div:nth-child(-n+12) {
-    background-color: #6b8e9f;
-    color: #ffffff;
+    background-color: #434DBF;
+    color: #FFCE19;
     font-weight: bold;
   }
 
   /* Apply grade level colors */
-  .grid > div.grade-9 { background-color: #f8d7da; }
-  .grid > div.grade-10 { background-color: #d4edda; }
-  .grid > div.grade-11 { background-color: #cce5ff; }
-  .grid > div.grade-12 { background-color: #fff3cd; }
-  .grid > div.grade-other { background-color: #e2e3e5; }
+  .grid > div.grade-9 { background-color: #FFCE19; }
+  .grid > div.grade-10 { background-color: #AA954A; }
+  .grid > div.grade-11 { background-color: #192CFF; }
+  .grid > div.grade-12 { background-color: #434DBF; }
+  .grid > div.grade-other { background-color: #4D5180; }
 
   /* Style for stacked grades in print */
   .grid > div.grade-stack {
@@ -297,19 +295,17 @@ main {
     background-color: #bbf7d0;
   }
 
-  /* Stats section */
   .print-stats {
     margin-top: 1cm;
     font-size: 12pt;
     font-weight: bold;
     text-align: center;
-    background-color: #f5efe7;
+    background-color: #FFCE19;
     padding: 0.5cm;
-    border: 2px solid #3a5f4a;
+    border: 2px solid #4D5180;
     border-radius: 5px;
   }
 
-  /* Footer for print */
   #print-footer {
     display: block !important;
     position: fixed;
@@ -317,9 +313,9 @@ main {
     width: 100%;
     text-align: center;
     font-size: 10pt;
-    color: #2e4a3d;
-    background-color: #d4e4d9;
+    color: #4D5180;
+    background-color: #D9C88E;
     padding: 0.2cm 0;
-    border-top: 1px solid #2e4a3d;
+    border-top: 1px solid #4D5180;
   }
 }

@@ -16,7 +16,7 @@ const requiredCredits24 = {
 };
 
 const requiredCredits27 = {
-  "LA": 4.0, "MA": 3.0, "SC": 3.0, "SS": 2.5, "GOV": 0.5, "Art": 1.5, "PE": 1.5, "CTE": 1.0, "HE": 0.5, "FL": 0.5, "EL": 4.0, "EL2": 4.0, "DS": 0.5
+  "LA": 4.0, "MA": 3.0, "SC": 3.0, "SS": 2.5, "GOV": 0.5, "Art": 1.5, "PE": 1.5, "CTE": 1.0, "HE": 0.5, "FL": 0.5, "EL": 4.5, "EL2": 4.0, "DS": 0.5
 };
 
 const creditValues = subjects.reduce((acc, subject) => {
@@ -761,7 +761,7 @@ const App = () => {
                     level
                   )
                 ),
-                React.createElement('div', { className: 'bg-gray-200 p-2 font-bold text-xs' }, 'Earned/Req.'),
+                React.createElement('div', { className: 'bg-gray-200 p-2 font-bold text-xs text-wrap' }, 'Earned/Req.'),
                 ...Object.keys(grid.transposed[subjects[0]]).map((_, i) =>
                   React.createElement(
                     'div',
@@ -813,7 +813,7 @@ const App = () => {
                     React.createElement(
                       'div',
                       {
-                        className: `p-2 text-center text-xs ${(earnedCredits[subject] || 0) >= (creditOption === "24" ? requiredCredits24[subject] : requiredCredits27[subject]) ? 'bg-green-200' : 'bg-gray-100'}`
+                        className: `p-2 text-center text-xs text-wrap ${(earnedCredits[subject] || 0) >= (creditOption === "24" ? requiredCredits24[subject] : requiredCredits27[subject]) ? 'bg-green-200' : 'bg-gray-100'}`,
                       },
                       `${(earnedCredits[subject] || 0).toFixed(2)}/${(creditOption === "24" ? requiredCredits24[subject] : requiredCredits27[subject]).toFixed(2)}`
                     )
@@ -829,14 +829,14 @@ const App = () => {
                     subject
                   )
                 ),
-                React.createElement('div', { className: 'bg-gray-200 p-2 font-bold text-xs' }, 'Earned/Req.'),
+                React.createElement('div', { className: 'bg-gray-200 p-2 font-bold text-xs text-wrap' }, 'Earned/Req.'),
                 React.createElement('div', { className: 'bg-gray-200 p-2 font-bold text-xs' }, 'Total Credits'),
                 ...subjects.map((subject, i) =>
                   React.createElement(
                     'div',
                     {
                       key: i,
-                      className: `p-2 text-center text-xs ${(earnedCredits[subject] || 0) >= (creditOption === "24" ? requiredCredits24[subject] : requiredCredits27[subject]) ? 'bg-green-200' : 'bg-gray-100'}`
+                      className: `p-2 text-center text-xs text-wrap ${(earnedCredits[subject] || 0) >= (creditOption === "24" ? requiredCredits24[subject] : requiredCredits27[subject]) ? 'bg-green-200' : 'bg-gray-100'}`
                     },
                     `${(earnedCredits[subject] || 0).toFixed(2)}/${(creditOption === "24" ? requiredCredits24[subject] : requiredCredits27[subject]).toFixed(2)}`
                   )

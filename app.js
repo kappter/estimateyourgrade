@@ -1,1011 +1,992 @@
-const grades = [
-  "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", "F", "P", "P+", "Clear"
+// ─────────────────────────────────────────────────────────────────────────────
+// Utah GPA Planner — Quarter Credit Model
+// Conforms to Utah Admin Code R277-700-6 (amended through June 2024)
+// Each standard course = 0.25 quarter credits
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── Grade definitions ─────────────────────────────────────────────────────────
+const GRADE_LIST = ["A","A-","B+","B","B-","C+","C","C-","D+","D","D-","F","P","P+","CR","Clear"];
+// CR = Credit Recovery / Alternative Credit (earns credit, counts in GPA like a normal grade)
+// When a student earns CR after an F, BOTH the F and the CR entry appear and count.
+
+const GPA_MAP = {
+  "A":4.0,"A-":3.7,"B+":3.3,"B":3.0,"B-":2.7,
+  "C+":2.3,"C":2.0,"C-":1.7,"D+":1.3,"D":1.0,"D-":0.7,"F":0.0
+};
+
+// CR grade defaults to C (2.0) — the typical minimum for credit recovery completion
+// Students/counselors can override by entering the actual earned grade instead
+const CR_GPA_DEFAULT = 2.0;
+
+const GRADE_COLOR = {
+  "A":"gc-a","A-":"gc-am","B+":"gc-bp","B":"gc-b","B-":"gc-bm",
+  "C+":"gc-cp","C":"gc-c","C-":"gc-cm","D+":"gc-dp","D":"gc-d","D-":"gc-dm",
+  "F":"gc-f","P":"gc-p","P+":"gc-pp","CR":"gc-cr"
+};
+
+// ── Subject definitions ───────────────────────────────────────────────────────
+// Aligned to R277-700-6 subject categories
+const SUBJECTS = [
+  { key:"LA",  label:"Language Arts",  abbr:"LA",  note:"4.0 cr — 9th–12th level (R277-700-6 §5)" },
+  { key:"MA",  label:"Math",           abbr:"MA",  note:"3.0 cr — SM I, II, III or equivalent (§6)" },
+  { key:"SC",  label:"Science",        abbr:"SC",  note:"3.0 cr — 2 foundation + 1 applied (§11)" },
+  { key:"SS",  label:"Social Studies", abbr:"SS",  note:"3.0 cr — incl. US Gov 0.5 + US Hist 1.0 (§12)" },
+  { key:"Art", label:"Arts",           abbr:"Art", note:"1.5 cr — Visual, Music, Dance, Theatre, Media (§13)" },
+  { key:"PE",  label:"Phys Ed",        abbr:"PE",  note:"1.5 cr — Participation, Fitness, Lifetime (§15)" },
+  { key:"CTE", label:"CTE",            abbr:"CTE", note:"1.0 cr — Career & Technical Education (§16)" },
+  { key:"HE",  label:"Health Ed",      abbr:"HE",  note:"0.5 cr — Health Education (§14)" },
+  { key:"FL",  label:"Fin Lit",        abbr:"FL",  note:"0.5 cr — General Financial Literacy (§19)" },
+  { key:"DS",  label:"Dig Studies",    abbr:"DS",  note:"0.5 cr — Digital Studies (§17)" },
+  { key:"EL",  label:"Electives",      abbr:"EL",  note:"5.5 cr (24-cr) / 8.5 cr (27-cr) — flexible (§20)" },
 ];
 
-const gpaMap = {
-  "A": 4.0, "A-": 3.7, "B+": 3.3, "B": 3.0, "B-": 2.7, "C+": 2.3,
-  "C": 2.0, "C-": 1.7, "D+": 1.3, "D": 1.0, "D-": 0.7, "F": 0.0
+const SUBJECT_KEYS = SUBJECTS.map(s => s.key);
+
+// ── Credit requirements per R277-700-6 ───────────────────────────────────────
+const REQ_24 = {
+  LA:4.0, MA:3.0, SC:3.0, SS:3.0,
+  Art:1.5, PE:1.5, CTE:1.0, HE:0.5, FL:0.5, DS:0.5, EL:5.5
+}; // Total: 24.0 ✓
+
+const REQ_27 = {
+  LA:4.0, MA:3.0, SC:3.0, SS:3.0,
+  Art:1.5, PE:1.5, CTE:1.0, HE:0.5, FL:0.5, DS:0.5, EL:8.5
+}; // Total: 27.0 ✓
+
+const CREDIT_PER_COURSE = 0.25;
+
+// Grade levels — "Recovery" is a dedicated row for credit recovery / alt credit
+const GRADE_LEVELS = ["9th","10th","11th","12th","Other","Recovery"];
+
+const LEVEL_LABELS = {
+  "9th":      "9th Grade",
+  "10th":     "10th Grade",
+  "11th":     "11th Grade",
+  "12th":     "12th Grade",
+  "Other":    "Other / Transfer",
+  "Recovery": "Credit Recovery / Alt Credit"
 };
 
-const passingGrades = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", "P", "P+"];
-
-const subjects = ["LA", "MA", "SC", "SS", "GOV", "Art", "PE", "CTE", "HE", "FL", "EL", "EL2", "DS"];
-
-const requiredCredits24 = {
-  "LA": 4.0, "MA": 3.0, "SC": 3.0, "SS": 2.5, "GOV": 0.5, "Art": 1.5, "PE": 1.5, "CTE": 1.0, "HE": 0.5, "FL": 0.5, "EL": 2.75, "EL2": 2.75, "DS": 0.5
+// ── Slots per subject per grade level ─────────────────────────────────────────
+// Standard rows: 4 slots (1.0 cr max per year — typical semester or quarter load)
+// Recovery row:  8 slots per subject (students may recover multiple courses)
+// EL column:     8 slots per year (electives are the most flexible category)
+// EL + Recovery: 12 slots (maximum flexibility for recovered elective credits)
+const SLOTS_PER_CELL = (subjKey, level) => {
+  const isRecovery = level === "Recovery";
+  const isEL = subjKey === "EL";
+  if (isRecovery && isEL) return 12;
+  if (isRecovery) return 8;
+  if (isEL) return 8;
+  return 4;
 };
 
-const requiredCredits27 = {
-  "LA": 4.0, "MA": 3.0, "SC": 3.0, "SS": 2.5, "GOV": 0.5, "Art": 1.5, "PE": 1.5, "CTE": 1.0, "HE": 0.5, "FL": 0.5, "EL": 4.5, "EL2": 4.0, "DS": 0.5
-};
-
-const creditValues = subjects.reduce((acc, subject) => {
-  acc[subject] = 0.25;
-  return acc;
-}, {});
-
-const App = () => {
-  const [theme, setTheme] = React.useState(localStorage.getItem('theme') || 'light');
-  const [creditOption, setCreditOption] = React.useState("24");
-  const [gridLayout, setGridLayout] = React.useState("stacked");
-  const [grid, setGrid] = React.useState({
-    stacked: {
-      "9th": Array(subjects.length).fill().map(() => ["", "", "", ""]),
-      "10th": Array(subjects.length).fill().map(() => ["", "", "", ""]),
-      "11th": Array(subjects.length).fill().map(() => ["", "", "", ""]),
-      "12th": Array(subjects.length).fill().map(() => ["", "", "", ""]),
-      "Other": Array(subjects.length).fill().map(() => ["", "", "", ""])
-    },
-    rowBased: {
-      "9th-1": Array(subjects.length).fill(""),
-      "9th-2": Array(subjects.length).fill(""),
-      "9th-3": Array(subjects.length).fill(""),
-      "9th-4": Array(subjects.length).fill(""),
-      "10th-1": Array(subjects.length).fill(""),
-      "10th-2": Array(subjects.length).fill(""),
-      "10th-3": Array(subjects.length).fill(""),
-      "10th-4": Array(subjects.length).fill(""),
-      "11th-1": Array(subjects.length).fill(""),
-      "11th-2": Array(subjects.length).fill(""),
-      "11th-3": Array(subjects.length).fill(""),
-      "11th-4": Array(subjects.length).fill(""),
-      "12th-1": Array(subjects.length).fill(""),
-      "12th-2": Array(subjects.length).fill(""),
-      "12th-3": Array(subjects.length).fill(""),
-      "12th-4": Array(subjects.length).fill(""),
-      "Other-1": Array(subjects.length).fill(""),
-      "Other-2": Array(subjects.length).fill(""),
-      "Other-3": Array(subjects.length).fill(""),
-      "Other-4": Array(subjects.length).fill("")
-    },
-    transposed: subjects.reduce((acc, subject) => {
-      acc[subject] = {
-        "9th": ["", "", "", ""],
-        "10th": ["", "", "", ""],
-        "11th": ["", "", "", ""],
-        "12th": ["", "", "", ""],
-        "Other": ["", "", "", ""]
-      };
-      return acc;
-    }, {})
+// ── Helper: build empty stacked grid ─────────────────────────────────────────
+function emptyStackedGrid() {
+  const g = {};
+  GRADE_LEVELS.forEach(lv => {
+    g[lv] = SUBJECT_KEYS.map(sk => {
+      const n = SLOTS_PER_CELL(sk, lv);
+      return { grades: Array(n).fill("") };
+    });
   });
-  const [activeCell, setActiveCell] = React.useState(null);
+  return g;
+}
 
-  React.useEffect(() => {
-    document.body.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
+// ── GPA calculation ───────────────────────────────────────────────────────────
+// Rules (standard weighted GPA):
+//  • F    → 0.0 quality points, NO earned credit, DOES count in GPA denominator
+//  • P/P+ → earns credit, excluded from GPA entirely (pass/fail)
+//  • CR   → earns credit, counts as C (2.0) in GPA unless a specific letter is
+//            recorded — represents credit recovery / alternative credit completion
+//  • All other letter grades → earn credit, count in GPA denominator
+//
+// When a student fails then recovers:
+//  - The F entry stays (0.0 QP, in denominator, no credit)
+//  - The CR/recovery grade entry also counts (QP + denominator + credit earned)
+//  - This correctly models the GPA impact of both the failure AND the recovery
+function calcStats(grid, reqCredits) {
+  const earned = {};
+  let totalEarned = 0;
+  let qualityPoints = 0;
+  let gpaDenominator = 0;
+
+  GRADE_LEVELS.forEach(lv => {
+    SUBJECT_KEYS.forEach((subj, col) => {
+      const cell = grid[lv][col];
+      cell.grades.forEach(grade => {
+        if (!grade) return;
+        const cv = CREDIT_PER_COURSE;
+
+        if (grade === "P" || grade === "P+") {
+          earned[subj] = (earned[subj] || 0) + cv;
+          totalEarned += cv;
+        } else if (grade === "F") {
+          qualityPoints += 0.0;
+          gpaDenominator += cv;
+          // No credit earned for F
+        } else if (grade === "CR") {
+          // Credit Recovery: earns credit, counts as C (2.0) in GPA
+          earned[subj] = (earned[subj] || 0) + cv;
+          totalEarned += cv;
+          qualityPoints += CR_GPA_DEFAULT * cv;
+          gpaDenominator += cv;
+        } else {
+          // Standard letter grade
+          earned[subj] = (earned[subj] || 0) + cv;
+          totalEarned += cv;
+          qualityPoints += GPA_MAP[grade] * cv;
+          gpaDenominator += cv;
+        }
+      });
+    });
+  });
+
+  const gpa = gpaDenominator > 0 ? +(qualityPoints / gpaDenominator).toFixed(3) : null;
+
+  let creditsNeeded = 0;
+  SUBJECT_KEYS.forEach(subj => {
+    const req = reqCredits[subj] || 0;
+    const have = earned[subj] || 0;
+    if (have < req) creditsNeeded += req - have;
+  });
+  creditsNeeded = +creditsNeeded.toFixed(2);
+
+  return { earned, totalEarned: +totalEarned.toFixed(2), gpa, creditsNeeded, qualityPoints, gpaDenominator };
+}
+
+// ── Per-grade-level stats ─────────────────────────────────────────────────────
+function calcLevelStats(grid, level) {
+  let credits = 0, qp = 0, denom = 0, fCount = 0, crCount = 0;
+  SUBJECT_KEYS.forEach((subj, col) => {
+    const cell = grid[level][col];
+    cell.grades.forEach(grade => {
+      if (!grade) return;
+      const cv = CREDIT_PER_COURSE;
+      if (grade === "P" || grade === "P+") {
+        credits += cv;
+      } else if (grade === "F") {
+        qp += 0; denom += cv; fCount++;
+      } else if (grade === "CR") {
+        credits += cv; qp += CR_GPA_DEFAULT * cv; denom += cv; crCount++;
+      } else {
+        credits += cv; qp += GPA_MAP[grade] * cv; denom += cv;
+      }
+    });
+  });
+  return {
+    credits: +credits.toFixed(2),
+    gpa: denom > 0 ? +(qp / denom).toFixed(3) : null,
+    fCount, crCount
+  };
+}
+
+// ── Projection math ───────────────────────────────────────────────────────────
+function calcNeededGPA(currentQP, currentDenom, remainingCredits, targetGPA) {
+  if (remainingCredits <= 0) return null;
+  const neededQP = targetGPA * (currentDenom + remainingCredits) - currentQP;
+  return +(neededQP / remainingCredits).toFixed(3);
+}
+
+function gpaToLetter(gpa) {
+  if (gpa === null || gpa === undefined) return "—";
+  if (gpa >= 4.0) return "A";
+  if (gpa >= 3.7) return "A-";
+  if (gpa >= 3.3) return "B+";
+  if (gpa >= 3.0) return "B";
+  if (gpa >= 2.7) return "B-";
+  if (gpa >= 2.3) return "C+";
+  if (gpa >= 2.0) return "C";
+  if (gpa >= 1.7) return "C-";
+  if (gpa >= 1.3) return "D+";
+  if (gpa >= 1.0) return "D";
+  if (gpa >= 0.7) return "D-";
+  return "F";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// React App
+// ─────────────────────────────────────────────────────────────────────────────
+const { useState, useEffect, useMemo, useCallback } = React;
+const e = React.createElement;
+
+function App() {
+  const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
+  const [creditPath, setCreditPath] = useState(localStorage.getItem("creditPath") || "24");
+  const [grid, setGrid] = useState(emptyStackedGrid);
+  const [activeCell, setActiveCell] = useState(null); // {level, col}
+  const [tab, setTab] = useState("grid");
+  const [studentName, setStudentName] = useState(localStorage.getItem("studentName") || "");
+  const [targetGPA, setTargetGPA] = useState(parseFloat(localStorage.getItem("targetGPA")) || 3.0);
+  const [showSubjectInfo, setShowSubjectInfo] = useState(null);
+  const [showRecovery, setShowRecovery] = useState(true);
+
+  const reqCredits = creditPath === "24" ? REQ_24 : REQ_27;
+
+  useEffect(() => {
+    document.body.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
-  };
+  useEffect(() => { localStorage.setItem("studentName", studentName); }, [studentName]);
+  useEffect(() => { localStorage.setItem("targetGPA", targetGPA); }, [targetGPA]);
+  useEffect(() => { localStorage.setItem("creditPath", creditPath); }, [creditPath]);
 
-  const handleCreditChange = (e) => {
-    setCreditOption(e.target.value);
-  };
+  // ── Stats ──────────────────────────────────────────────────────────────────
+  const stats = useMemo(() => calcStats(grid, reqCredits), [grid, reqCredits]);
 
-  const handleGridLayoutChange = (e) => {
-    const newLayout = e.target.value;
-    const newGrid = { ...grid };
+  const levelStats = useMemo(() => {
+    const out = {};
+    GRADE_LEVELS.forEach(lv => { out[lv] = calcLevelStats(grid, lv); });
+    return out;
+  }, [grid]);
 
-    if (newLayout === "stacked" && gridLayout === "rowBased") {
-      Object.keys(newGrid.stacked).forEach(level => {
-        newGrid.stacked[level] = Array(subjects.length).fill().map(() => ["", "", "", ""]);
-      });
-
-      const gradeLevels = ["9th", "10th", "11th", "12th", "Other"];
-      gradeLevels.forEach((level, levelIndex) => {
-        const rows = [`${level}-1`, `${level}-2`, `${level}-3`, `${level}-4`];
-        subjects.forEach((subject, col) => {
-          let gradeIndex = 0;
-          rows.forEach(row => {
-            const grade = grid.rowBased[row][col];
-            if (grade && gradeIndex < 4) {
-              newGrid.stacked[level][col][gradeIndex] = grade;
-              gradeIndex++;
-            }
-          });
-        });
-      });
-    } else if (newLayout === "rowBased" && gridLayout === "stacked") {
-      Object.keys(newGrid.rowBased).forEach(row => {
-        newGrid.rowBased[row] = Array(subjects.length).fill("");
-      });
-
-      const gradeLevels = ["9th", "10th", "11th", "12th", "Other"];
-      gradeLevels.forEach((level, levelIndex) => {
-        const rows = [`${level}-1`, `${level}-2`, `${level}-3`, `${level}-4`];
-        subjects.forEach((subject, col) => {
-          const grades = grid.stacked[level][col];
-          grades.forEach((grade, i) => {
-            if (grade && i < 4) {
-              newGrid.rowBased[rows[i]][col] = grade;
-            }
-          });
-        });
-      });
-    } else if (newLayout === "transposed" && gridLayout === "stacked") {
-      Object.keys(newGrid.transposed).forEach(subject => {
-        newGrid.transposed[subject] = {
-          "9th": ["", "", "", ""],
-          "10th": ["", "", "", ""],
-          "11th": ["", "", "", ""],
-          "12th": ["", "", "", ""],
-          "Other": ["", "", "", ""]
-        };
-      });
-
-      const gradeLevels = ["9th", "10th", "11th", "12th", "Other"];
-      subjects.forEach((subject, col) => {
-        gradeLevels.forEach(level => {
-          const grades = grid.stacked[level][col];
-          newGrid.transposed[subject][level] = [...grades];
-        });
-      });
-    } else if (newLayout === "transposed" && gridLayout === "rowBased") {
-      Object.keys(newGrid.transposed).forEach(subject => {
-        newGrid.transposed[subject] = {
-          "9th": ["", "", "", ""],
-          "10th": ["", "", "", ""],
-          "11th": ["", "", "", ""],
-          "12th": ["", "", "", ""],
-          "Other": ["", "", "", ""]
-        };
-      });
-
-      const gradeLevels = ["9th", "10th", "11th", "12th", "Other"];
-      gradeLevels.forEach((level, levelIndex) => {
-        const rows = [`${level}-1`, `${level}-2`, `${level}-3`, `${level}-4`];
-        subjects.forEach((subject, col) => {
-          let gradeIndex = 0;
-          rows.forEach(row => {
-            const grade = grid.rowBased[row][col];
-            if (grade && gradeIndex < 4) {
-              newGrid.transposed[subject][level][gradeIndex] = grade;
-              gradeIndex++;
-            }
-          });
-        });
-      });
-    } else if (newLayout === "stacked" && gridLayout === "transposed") {
-      Object.keys(newGrid.stacked).forEach(level => {
-        newGrid.stacked[level] = Array(subjects.length).fill().map(() => ["", "", "", ""]);
-      });
-
-      subjects.forEach((subject, col) => {
-        const gradeLevels = ["9th", "10th", "11th", "12th", "Other"];
-        gradeLevels.forEach(level => {
-          newGrid.stacked[level][col] = [...grid.transposed[subject][level]];
-        });
-      });
-    } else if (newLayout === "rowBased" && gridLayout === "transposed") {
-      Object.keys(newGrid.rowBased).forEach(row => {
-        newGrid.rowBased[row] = Array(subjects.length).fill("");
-      });
-
-      const gradeLevels = ["9th", "10th", "11th", "12th", "Other"];
-      gradeLevels.forEach((level, levelIndex) => {
-        const rows = [`${level}-1`, `${level}-2`, `${level}-3`, `${level}-4`];
-        subjects.forEach((subject, col) => {
-          const grades = grid.transposed[subject][level];
-          grades.forEach((grade, i) => {
-            if (grade && i < 4) {
-              newGrid.rowBased[rows[i]][col] = grade;
-            }
-          });
-        });
-      });
-    }
-
-    setGrid(newGrid);
-    setGridLayout(newLayout);
-  };
-
-  const handleCellHover = (key, col) => {
-    setActiveCell({ key, col });
-  };
-
-  const handleCellLeave = () => {
-    setActiveCell(null);
-  };
-
-  const handleSelectGrade = (key, col, grade) => {
-    const newGrid = { ...grid };
-    if (gridLayout === "stacked") {
-      if (grade === "Clear") {
-        newGrid.stacked[key][col] = ["", "", "", ""];
-      } else {
-        const currentGrades = newGrid.stacked[key][col];
-        const firstEmptyIndex = currentGrades.findIndex(g => !g);
-        if (firstEmptyIndex !== -1) {
-          currentGrades[firstEmptyIndex] = grade;
-          newGrid.stacked[key][col] = [...currentGrades];
-        }
-      }
-    } else if (gridLayout === "rowBased") {
-      newGrid.rowBased[key][col] = grade === "Clear" ? "" : grade;
-    } else if (gridLayout === "transposed") {
-      if (grade === "Clear") {
-        newGrid.transposed[key][col] = ["", "", "", ""];
-      } else {
-        const currentGrades = newGrid.transposed[key][col];
-        const firstEmptyIndex = currentGrades.findIndex(g => !g);
-        if (firstEmptyIndex !== -1) {
-          currentGrades[firstEmptyIndex] = grade;
-          newGrid.transposed[key][col] = [...currentGrades];
-        }
-      }
-    }
-    setGrid(newGrid);
-    setActiveCell(null);
-  };
-
-  const handleFillGrid = (fillGrade) => {
-    const newGrid = { ...grid };
-    const requiredCredits = creditOption === "24" ? requiredCredits24 : requiredCredits27;
-    const totalSlotsNeeded = creditOption === "24" ? 96 : 108;
-    let slotsFilled = 0;
-
-    if (gridLayout === "stacked") {
-      Object.keys(newGrid.stacked).forEach(level => {
-        newGrid.stacked[level] = Array(subjects.length).fill().map(() => ["", "", "", ""]);
-      });
-
-      const gradeLevels = ["9th", "10th", "11th", "12th", "Other"];
-      subjects.forEach((subject, col) => {
-        const slotsForSubject = (requiredCredits[subject] / 0.25);
-        let slotsToFill = slotsForSubject;
-        let currentLevelIndex = 0;
-
-        while (slotsToFill > 0 && currentLevelIndex < gradeLevels.length) {
-          const level = gradeLevels[currentLevelIndex];
-          const currentGrades = newGrid.stacked[level][col];
-          const emptySlots = currentGrades.filter(g => !g).length;
-          const slotsToAdd = Math.min(emptySlots, slotsToFill);
-
-          for (let i = 0; i < slotsToAdd; i++) {
-            const firstEmptyIndex = currentGrades.findIndex(g => !g);
-            if (firstEmptyIndex !== -1) {
-              currentGrades[firstEmptyIndex] = fillGrade;
-              slotsFilled++;
-            }
-          }
-
-          newGrid.stacked[level][col] = [...currentGrades];
-          slotsToFill -= slotsToAdd;
-          currentLevelIndex++;
-        }
-      });
-    } else if (gridLayout === "rowBased") {
-      Object.keys(newGrid.rowBased).forEach(row => {
-        newGrid.rowBased[row] = Array(subjects.length).fill("");
-      });
-
-      const rowKeys = Object.keys(newGrid.rowBased);
-      let currentRowIndex = 0;
-      let currentCol = 0;
-
-      while (slotsFilled < totalSlotsNeeded && currentRowIndex < rowKeys.length) {
-        const rowKey = rowKeys[currentRowIndex];
-        const subject = subjects[currentCol];
-        const slotsForSubject = (requiredCredits[subject] / 0.25);
-        const earnedSlots = Object.values(newGrid.rowBased).reduce((sum, row) => sum + (row[currentCol] ? 1 : 0), 0);
-
-        if (earnedSlots < slotsForSubject) {
-          newGrid.rowBased[rowKey][currentCol] = fillGrade;
-          slotsFilled++;
-        }
-
-        currentCol++;
-        if (currentCol >= subjects.length) {
-          currentCol = 0;
-          currentRowIndex++;
-        }
-      }
-    } else if (gridLayout === "transposed") {
-      Object.keys(newGrid.transposed).forEach(subject => {
-        newGrid.transposed[subject] = {
-          "9th": ["", "", "", ""],
-          "10th": ["", "", "", ""],
-          "11th": ["", "", "", ""],
-          "12th": ["", "", "", ""],
-          "Other": ["", "", "", ""]
-        };
-      });
-
-      const gradeLevels = ["9th", "10th", "11th", "12th", "Other"];
-      subjects.forEach(subject => {
-        const slotsForSubject = (requiredCredits[subject] / 0.25);
-        let slotsToFill = slotsForSubject;
-        let currentLevelIndex = 0;
-
-        while (slotsToFill > 0 && currentLevelIndex < gradeLevels.length) {
-          const level = gradeLevels[currentLevelIndex];
-          const currentGrades = newGrid.transposed[subject][level];
-          const emptySlots = currentGrades.filter(g => !g).length;
-          const slotsToAdd = Math.min(emptySlots, slotsToFill);
-
-          for (let i = 0; i < slotsToAdd; i++) {
-            const firstEmptyIndex = currentGrades.findIndex(g => !g);
-            if (firstEmptyIndex !== -1) {
-              currentGrades[firstEmptyIndex] = fillGrade;
-              slotsFilled++;
-            }
-          }
-
-          newGrid.transposed[subject][level] = [...currentGrades];
-          slotsToFill -= slotsToAdd;
-          currentLevelIndex++;
-        }
-      });
-    }
-
-    setGrid(newGrid);
-  };
-
-  const handleFillRandom = () => {
-    const newGrid = { ...grid };
-    const requiredCredits = creditOption === "24" ? requiredCredits24 : requiredCredits27;
-    const totalSlotsNeeded = creditOption === "24" ? 96 : 108;
-    let slotsFilled = 0;
-
-    if (gridLayout === "stacked") {
-      Object.keys(newGrid.stacked).forEach(level => {
-        newGrid.stacked[level] = Array(subjects.length).fill().map(() => ["", "", "", ""]);
-      });
-
-      const gradeLevels = ["9th", "10th", "11th", "12th", "Other"];
-      subjects.forEach((subject, col) => {
-        const slotsForSubject = (requiredCredits[subject] / 0.25);
-        let slotsToFill = slotsForSubject;
-        let currentLevelIndex = 0;
-
-        while (slotsToFill > 0 && currentLevelIndex < gradeLevels.length) {
-          const level = gradeLevels[currentLevelIndex];
-          const currentGrades = newGrid.stacked[level][col];
-          const emptySlots = currentGrades.filter(g => !g).length;
-          const slotsToAdd = Math.min(emptySlots, slotsToFill);
-
-          for (let i = 0; i < slotsToAdd; i++) {
-            const firstEmptyIndex = currentGrades.findIndex(g => !g);
-            if (firstEmptyIndex !== -1) {
-              const randomGrade = passingGrades[Math.floor(Math.random() * passingGrades.length)];
-              currentGrades[firstEmptyIndex] = randomGrade;
-              slotsFilled++;
-            }
-          }
-
-          newGrid.stacked[level][col] = [...currentGrades];
-          slotsToFill -= slotsToAdd;
-          currentLevelIndex++;
-        }
-      });
-    } else if (gridLayout === "rowBased") {
-      Object.keys(newGrid.rowBased).forEach(row => {
-        newGrid.rowBased[row] = Array(subjects.length).fill("");
-      });
-
-      const rowKeys = Object.keys(newGrid.rowBased);
-      let currentRowIndex = 0;
-      let currentCol = 0;
-
-      while (slotsFilled < totalSlotsNeeded && currentRowIndex < rowKeys.length) {
-        const rowKey = rowKeys[currentRowIndex];
-        const subject = subjects[currentCol];
-        const slotsForSubject = (requiredCredits[subject] / 0.25);
-        const earnedSlots = Object.values(newGrid.rowBased).reduce((sum, row) => sum + (row[currentCol] ? 1 : 0), 0);
-
-        if (earnedSlots < slotsForSubject) {
-          const randomGrade = passingGrades[Math.floor(Math.random() * passingGrades.length)];
-          newGrid.rowBased[rowKey][currentCol] = randomGrade;
-          slotsFilled++;
-        }
-
-        currentCol++;
-        if (currentCol >= subjects.length) {
-          currentCol = 0;
-          currentRowIndex++;
-        }
-      }
-    } else if (gridLayout === "transposed") {
-      Object.keys(newGrid.transposed).forEach(subject => {
-        newGrid.transposed[subject] = {
-          "9th": ["", "", "", ""],
-          "10th": ["", "", "", ""],
-          "11th": ["", "", "", ""],
-          "12th": ["", "", "", ""],
-          "Other": ["", "", "", ""]
-        };
-      });
-
-      const gradeLevels = ["9th", "10th", "11th", "12th", "Other"];
-      subjects.forEach(subject => {
-        const slotsForSubject = (requiredCredits[subject] / 0.25);
-        let slotsToFill = slotsForSubject;
-        let currentLevelIndex = 0;
-
-        while (slotsToFill > 0 && currentLevelIndex < gradeLevels.length) {
-          const level = gradeLevels[currentLevelIndex];
-          const currentGrades = newGrid.transposed[subject][level];
-          const emptySlots = currentGrades.filter(g => !g).length;
-          const slotsToAdd = Math.min(emptySlots, slotsToFill);
-
-          for (let i = 0; i < slotsToAdd; i++) {
-            const firstEmptyIndex = currentGrades.findIndex(g => !g);
-            if (firstEmptyIndex !== -1) {
-              const randomGrade = passingGrades[Math.floor(Math.random() * passingGrades.length)];
-              currentGrades[firstEmptyIndex] = randomGrade;
-              slotsFilled++;
-            }
-          }
-
-          newGrid.transposed[subject][level] = [...currentGrades];
-          slotsToFill -= slotsToAdd;
-          currentLevelIndex++;
-        }
-      });
-    }
-
-    setGrid(newGrid);
-  };
-
-  const calculateStats = React.useCallback(() => {
-    const requiredCredits = creditOption === "24" ? requiredCredits24 : requiredCredits27;
-    const earnedCredits = {};
-    let totalCredits = 0;
-    let totalGPA = 0;
-    let totalCourses = 0;
-
-    if (gridLayout === "stacked") {
-      for (const gradeLevel of Object.keys(grid.stacked)) {
-        for (let col = 0; col < grid.stacked[gradeLevel].length; col++) {
-          const gradeArray = grid.stacked[gradeLevel][col];
-          for (const grade of gradeArray) {
-            if (grade) {
-              const subject = subjects[col];
-              const creditValue = creditValues[subject];
-              if (grade !== "F") {
-                earnedCredits[subject] = (earnedCredits[subject] || 0) + creditValue;
-                totalCredits += creditValue;
-              }
-              if (grade !== "P" && grade !== "P+") {
-                totalGPA += gpaMap[grade] * creditValue;
-                totalCourses += creditValue;
-              }
-            }
-          }
-        }
-      }
-    } else if (gridLayout === "rowBased") {
-      for (const rowKey of Object.keys(grid.rowBased)) {
-        for (let col = 0; col < grid.rowBased[rowKey].length; col++) {
-          const grade = grid.rowBased[rowKey][col];
-          if (grade) {
-            const subject = subjects[col];
-            const creditValue = creditValues[subject];
-            if (grade !== "F") {
-              earnedCredits[subject] = (earnedCredits[subject] || 0) + creditValue;
-              totalCredits += creditValue;
-            }
-            if (grade !== "P" && grade !== "P+") {
-              totalGPA += gpaMap[grade] * creditValue;
-              totalCourses += creditValue;
-            }
-          }
-        }
-      }
-    } else if (gridLayout === "transposed") {
-      for (const subject of Object.keys(grid.transposed)) {
-        for (const level of Object.keys(grid.transposed[subject])) {
-          const gradeArray = grid.transposed[subject][level];
-          for (const grade of gradeArray) {
-            if (grade) {
-              const creditValue = creditValues[subject];
-              if (grade !== "F") {
-                earnedCredits[subject] = (earnedCredits[subject] || 0) + creditValue;
-                totalCredits += creditValue;
-              }
-              if (grade !== "P" && grade !== "P+") {
-                totalGPA += gpaMap[grade] * creditValue;
-                totalCourses += creditValue;
-              }
-            }
-          }
-        }
-      }
-    }
-
-    let creditsNeeded = 0;
-    Object.keys(requiredCredits).forEach((subject) => {
-      const earned = earnedCredits[subject] || 0;
-      const needed = requiredCredits[subject] - earned;
-      if (needed > 0) creditsNeeded += needed;
+  const projectionData = useMemo(() => {
+    const { qualityPoints: qp, gpaDenominator: denom, creditsNeeded: remaining } = stats;
+    const targets = [4.0, 3.7, 3.5, 3.3, 3.0, 2.7, 2.5, 2.0];
+    const scenarios = targets.map(t => {
+      const needed = calcNeededGPA(qp, denom, remaining, t);
+      return {
+        target: t,
+        needed,
+        letter: gpaToLetter(needed),
+        feasible: needed !== null && needed <= 4.0 && needed >= 0
+      };
     });
+    const customNeeded = calcNeededGPA(qp, denom, remaining, targetGPA);
+    return { qp, denom, remaining, scenarios, customNeeded };
+  }, [stats, targetGPA]);
 
-    const gpa = totalCourses > 0 ? Number((totalGPA / totalCourses).toFixed(3)) : 0;
-    return { totalCredits, creditsNeeded, gpa, earnedCredits };
-  }, [grid, creditOption, gridLayout]);
-
-  const calculateTotalCreditsPerGradeLevel = (gradeLevel) => {
-    let totalCredits = 0;
-    if (gridLayout === "stacked") {
-      const gradeArray = grid.stacked[gradeLevel];
-      gradeArray.forEach(subjectGrades => {
-        subjectGrades.forEach(grade => {
-          if (grade && grade !== "F") {
-            totalCredits += 0.25;
-          }
-        });
-      });
-    } else if (gridLayout === "rowBased") {
-      const rows = [`${gradeLevel}-1`, `${gradeLevel}-2`, `${gradeLevel}-3`, `${gradeLevel}-4`];
-      rows.forEach(rowKey => {
-        const row = grid.rowBased[rowKey];
-        row.forEach(grade => {
-          if (grade && grade !== "F") {
-            totalCredits += 0.25;
-          }
-        });
-      });
-    }
-    return totalCredits.toFixed(2);
-  };
-
-  const { totalCredits, creditsNeeded, gpa, earnedCredits } = React.useMemo(() => calculateStats(), [calculateStats]);
-
-  const handlePrint = () => {
-    const now = new Date();
-    const dateTime = now.toLocaleString('en-US', { 
-      year: 'numeric', 
-      month: '2-digit', 
-      day: '2-digit', 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      second: '2-digit' 
+  // ── Grid mutations ─────────────────────────────────────────────────────────
+  const setGrade = useCallback((level, col, slotIndex, grade) => {
+    setGrid(prev => {
+      const next = { ...prev };
+      next[level] = [...prev[level]];
+      const cell = { ...prev[level][col] };
+      const newGrades = [...cell.grades];
+      newGrades[slotIndex] = grade;
+      cell.grades = newGrades;
+      next[level][col] = cell;
+      return next;
     });
-    document.getElementById('print-footer').innerText = 
-      `Printed on: ${dateTime} | Utah Quarter Credit Model GPA Calculator - Generated by app.js`;
+  }, []);
 
-    const printWindow = window.open('', '_blank');
-    let gridHtml = '';
-    if (gridLayout === "stacked") {
-      gridHtml = `
-        <div class="grid">
-          <div>Grade</div>
-          ${subjects.map(subject => `<div>${subject}</div>`).join('')}
-          <div>Earned/Req.</div>
-          <div>Total Credits</div>
-          ${subjects.map(subject => `
-            <div class="${(earnedCredits[subject] || 0) >= (creditOption === "24" ? requiredCredits24[subject] : requiredCredits27[subject]) ? 'bg-green-200' : 'bg-gray-100'}">
-              ${(earnedCredits[subject] || 0).toFixed(2)}/${(creditOption === "24" ? requiredCredits24[subject] : requiredCredits27[subject]).toFixed(2)}
-            </div>
-          `).join('')}
-          <div class="bg-gray-200">-</div>
-          ${Object.keys(grid.stacked).map(gradeLevel => `
-            <div class="grade-${gradeLevel.toLowerCase().replace(/\dth/, '')}">${gradeLevel}</div>
-            ${grid.stacked[gradeLevel].map(gradeArray => `
-              <div class="grade-${gradeLevel.toLowerCase().replace(/\dth/, '')} grade-stack">
-                ${gradeArray.map(grade => `<span>${grade || ""}</span>`).join('')}
-              </div>
-            `).join('')}
-            <div class="grade-${gradeLevel.toLowerCase().replace(/\dth/, '')}">
-              ${calculateTotalCreditsPerGradeLevel(gradeLevel)}
-            </div>
-          `).join('')}
-        </div>
-      `;
-    } else if (gridLayout === "rowBased") {
-      gridHtml = `
-        <div class="grid">
-          <div>Grade</div>
-          ${subjects.map(subject => `<div>${subject}</div>`).join('')}
-          <div>Earned/Req.</div>
-          <div>Total Credits</div>
-          ${subjects.map(subject => `
-            <div class="${(earnedCredits[subject] || 0) >= (creditOption === "24" ? requiredCredits24[subject] : requiredCredits27[subject]) ? 'bg-green-200' : 'bg-gray-100'}">
-              ${(earnedCredits[subject] || 0).toFixed(2)}/${(creditOption === "24" ? requiredCredits24[subject] : requiredCredits27[subject]).toFixed(2)}
-            </div>
-          `).join('')}
-          <div class="bg-gray-200">-</div>
-          ${Object.keys(grid.rowBased).map(rowKey => `
-            <div class="grade-${rowKey.split('-')[0].toLowerCase().replace(/\dth/, '')}">${rowKey}</div>
-            ${grid.rowBased[rowKey].map(grade => `
-              <div class="grade-${rowKey.split('-')[0].toLowerCase().replace(/\dth/, '')}">${grade || ""}</div>
-            `).join('')}
-            ${rowKey.endsWith('-1') ? `
-              <div class="grade-${rowKey.split('-')[0].toLowerCase().replace(/\dth/, '')}" style="grid-row: span 4;">
-                ${calculateTotalCreditsPerGradeLevel(rowKey.split('-')[0])}
-              </div>
-            ` : ''}
-          `).join('')}
-        </div>
-      `;
-    } else if (gridLayout === "transposed") {
-      gridHtml = `
-        <div class="grid grid-transposed">
-          <div>Subject</div>
-          ${Object.keys(grid.transposed[subjects[0]]).map(level => `<div>${level}</div>`).join('')}
-          <div>Earned/Req.</div>
-          ${Object.keys(grid.transposed[subjects[0]]).map((_, i) => `
-            <div class="bg-gray-200">-</div>
-          `).join('')}
-          ${subjects.map(subject => `
-            <div class="bg-blue-500 text-white p-2 text-center font-bold text-xs">${subject}</div>
-            ${Object.keys(grid.transposed[subject]).map(level => `
-              <div class="grade-${level.toLowerCase().replace(/\dth/, '')} grade-stack">
-                ${grid.transposed[subject][level].map(grade => `<span>${grade || ""}</span>`).join('')}
-              </div>
-            `).join('')}
-            <div class="${(earnedCredits[subject] || 0) >= (creditOption === "24" ? requiredCredits24[subject] : requiredCredits27[subject]) ? 'bg-green-200' : 'bg-gray-100'}">
-              ${(earnedCredits[subject] || 0).toFixed(2)}/${(creditOption === "24" ? requiredCredits24[subject] : requiredCredits27[subject]).toFixed(2)}
-            </div>
-          `).join('')}
-        </div>
-      `;
+  const handleCellClick = useCallback((level, col) => {
+    setActiveCell(prev =>
+      prev && prev.level === level && prev.col === col ? null : { level, col }
+    );
+  }, []);
+
+  const handleSelectGrade = useCallback((grade) => {
+    if (!activeCell) return;
+    const { level, col } = activeCell;
+    const cell = grid[level][col];
+    const subj = SUBJECT_KEYS[col];
+    const nSlots = SLOTS_PER_CELL(subj, level);
+
+    if (grade === "Clear") {
+      setGrid(prev => {
+        const next = { ...prev };
+        next[level] = [...prev[level]];
+        next[level][col] = { grades: Array(nSlots).fill("") };
+        return next;
+      });
+    } else {
+      const emptyIdx = cell.grades.findIndex(g => !g);
+      if (emptyIdx !== -1) {
+        setGrade(level, col, emptyIdx, grade);
+      } else {
+        // All slots full — replace last slot
+        setGrade(level, col, cell.grades.length - 1, grade);
+      }
     }
+    setActiveCell(null);
+  }, [activeCell, grid, setGrade]);
 
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Print - Utah Quarter Credit Model GPA Calculator</title>
-          <link rel="stylesheet" href="./styles.css">
-        </head>
-        <body>
-          <div class="print-title">Utah Quarter Credit Model GPA Calculator</div>
-          <main>
-            <div class="container mx-auto">
-              ${gridHtml}
-              <div class="print-stats">
-                <p>Credits Needed to Graduate: ${creditsNeeded.toFixed(2)}</p>
-                <p>Total Credits: ${totalCredits.toFixed(2)}</p>
-                <p>GPA: ${gpa}</p>
-              </div>
-            </div>
-          </main>
-          <div id="print-footer">${document.getElementById('print-footer').innerText}</div>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
-  };
+  const handleRemoveGrade = useCallback((level, col, slotIndex, ev) => {
+    ev.stopPropagation();
+    setGrade(level, col, slotIndex, "");
+  }, [setGrade]);
 
-  const gradeLevels = ["9th", "10th", "11th", "12th", "Other"];
-  const rowBasedKeys = gradeLevels.flatMap(level => [
-    `${level}-1`, `${level}-2`, `${level}-3`, `${level}-4`
-  ]);
+  // ── Fill helpers ───────────────────────────────────────────────────────────
+  const fillAll = useCallback((fillGrade) => {
+    setGrid(() => {
+      const next = emptyStackedGrid();
+      // Only fill the standard rows (not Recovery)
+      const standardLevels = GRADE_LEVELS.filter(lv => lv !== "Recovery");
+      SUBJECT_KEYS.forEach((subj, col) => {
+        const totalSlots = Math.round(reqCredits[subj] / CREDIT_PER_COURSE);
+        const maxPerCell = SLOTS_PER_CELL(subj, "9th");
+        let filled = 0;
+        for (let li = 0; li < standardLevels.length && filled < totalSlots; li++) {
+          const lv = standardLevels[li];
+          for (let si = 0; si < maxPerCell && filled < totalSlots; si++) {
+            next[lv][col].grades[si] = fillGrade;
+            filled++;
+          }
+        }
+      });
+      return next;
+    });
+  }, [reqCredits]);
 
-  return React.createElement(
-    'div',
-    null,
-    React.createElement(
-      'nav',
-      { className: 'navbar flex justify-center' },
-      React.createElement(
-        'div',
-        { className: 'flex space-x-4' },
-        React.createElement('a', { href: '#', className: 'text-lg' }, 'Home'),
-        React.createElement(
-          'select',
-          { onChange: handleCreditChange, value: creditOption, className: 'text-lg' },
-          React.createElement('option', { value: '24' }, '24 Credits'),
-          React.createElement('option', { value: '27' }, '27 Credits')
-        ),
-        React.createElement(
-          'select',
-          { onChange: handleGridLayoutChange, value: gridLayout, className: 'text-lg' },
-          React.createElement('option', { value: 'stacked' }, 'Stacked Grid'),
-          React.createElement('option', { value: 'rowBased' }, 'Row-Based Grid'),
-          React.createElement('option', { value: 'transposed' }, 'Transposed Grid')
-        ),
-        React.createElement(
-          'a',
-          {
-            href: '#',
-            onClick: () => {
-              const newGrid = { ...grid };
-              if (gridLayout === "stacked") {
-                Object.keys(newGrid.stacked).forEach(level => {
-                  newGrid.stacked[level] = Array(subjects.length).fill().map(() => ["", "", "", ""]);
-                });
-              } else if (gridLayout === "rowBased") {
-                Object.keys(newGrid.rowBased).forEach(row => {
-                  newGrid.rowBased[row] = Array(subjects.length).fill("");
-                });
-              } else if (gridLayout === "transposed") {
-                Object.keys(newGrid.transposed).forEach(subject => {
-                  newGrid.transposed[subject] = {
-                    "9th": ["", "", "", ""],
-                    "10th": ["", "", "", ""],
-                    "11th": ["", "", "", ""],
-                    "12th": ["", "", "", ""],
-                    "Other": ["", "", "", ""]
-                  };
-                });
-              }
-              setGrid(newGrid);
-            },
-            className: 'text-lg'
-          },
-          'Clear Grid'
-        ),
-        React.createElement('a', { href: '#', onClick: handlePrint, className: 'text-lg' }, 'Print'),
-        React.createElement(
-          'a',
-          { href: '#', onClick: toggleTheme, className: 'text-lg' },
-          theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'
-        )
+  const fillRandom = useCallback(() => {
+    // Weighted random — more realistic distribution
+    const weightedGrades = [
+      "A","A","A-","A-","B+","B","B","B-","B-","C+","C","C","C-","D+","D","D-"
+    ];
+    setGrid(() => {
+      const next = emptyStackedGrid();
+      const standardLevels = GRADE_LEVELS.filter(lv => lv !== "Recovery");
+      SUBJECT_KEYS.forEach((subj, col) => {
+        const totalSlots = Math.round(reqCredits[subj] / CREDIT_PER_COURSE);
+        const maxPerCell = SLOTS_PER_CELL(subj, "9th");
+        let filled = 0;
+        for (let li = 0; li < standardLevels.length && filled < totalSlots; li++) {
+          const lv = standardLevels[li];
+          for (let si = 0; si < maxPerCell && filled < totalSlots; si++) {
+            next[lv][col].grades[si] = weightedGrades[Math.floor(Math.random() * weightedGrades.length)];
+            filled++;
+          }
+        }
+      });
+      return next;
+    });
+  }, [reqCredits]);
+
+  // "Bad year" scenario — simulate a rough year then recovery
+  const fillBadYear = useCallback((badYear) => {
+    setGrid(prev => {
+      const next = JSON.parse(JSON.stringify(prev)); // deep clone
+      const col_LA = SUBJECT_KEYS.indexOf("LA");
+      const col_MA = SUBJECT_KEYS.indexOf("MA");
+      const col_SC = SUBJECT_KEYS.indexOf("SC");
+      // Simulate failing core subjects in the bad year
+      [col_LA, col_MA, col_SC].forEach(col => {
+        if (col >= 0) {
+          next[badYear][col].grades[0] = "F";
+          next[badYear][col].grades[1] = "F";
+        }
+      });
+      // Add recovery entries
+      [col_LA, col_MA, col_SC].forEach(col => {
+        if (col >= 0) {
+          next["Recovery"][col].grades[0] = "CR";
+          next["Recovery"][col].grades[1] = "CR";
+        }
+      });
+      return next;
+    });
+  }, []);
+
+  const clearAll = useCallback(() => {
+    setGrid(emptyStackedGrid());
+    setActiveCell(null);
+  }, []);
+
+  // ── Cell renderer ──────────────────────────────────────────────────────────
+  const renderGradeSelector = (level, col) => {
+    const isRecovery = level === "Recovery";
+    return e("div", {
+      className: `grade-selector ${isRecovery ? "grade-selector-recovery" : ""}`,
+      onClick: ev => ev.stopPropagation()
+    },
+      isRecovery && e("div", { className: "grade-selector-hint" },
+        "CR = Credit Recovery (earns credit, counts as C in GPA)"
+      ),
+      GRADE_LIST.map(g =>
+        e("button", {
+          key: g,
+          className: `grade-option ${GRADE_COLOR[g] ? GRADE_COLOR[g] : ""} ${g === "Clear" ? "grade-option-clear" : ""} ${g === "CR" ? "grade-option-cr-highlight" : ""}`,
+          onClick: () => handleSelectGrade(g),
+          title: g === "CR" ? "Credit Recovery / Alternative Credit — earns 0.25 cr, counts as C (2.0) in GPA" :
+                 g === "F"  ? "Fail — 0.0 GPA points, no credit earned" :
+                 g === "P"  ? "Pass — earns credit, excluded from GPA" :
+                 g === "P+" ? "Pass+ — earns credit, excluded from GPA" :
+                 g === "Clear" ? "Remove all grades from this cell" : g
+        }, g)
       )
-    ),
-    React.createElement(
-      'main',
-      { className: 'container mx-auto p-4' },
-      React.createElement(
-        'h1',
-        { className: 'text-3xl font-bold text-center text-blue-600 mb-4' },
-        'Utah Quarter Credit Model GPA Calculator'
+    );
+  };
+
+  const renderCell = (level, col) => {
+    const cell = grid[level][col];
+    const isActive = activeCell && activeCell.level === level && activeCell.col === col;
+    const isRecovery = level === "Recovery";
+    const subj = SUBJECTS[col];
+    const req = reqCredits[subj.key] || 0;
+    const have = stats.earned[subj.key] || 0;
+
+    const filledGrades = cell.grades.filter(g => !!g);
+    const hasFail = filledGrades.includes("F");
+    const hasCR   = filledGrades.includes("CR");
+
+    return e("div", {
+      key: `${level}-${col}`,
+      className: [
+        "grid-cell",
+        isActive ? "grid-cell-active" : "",
+        isRecovery ? "grid-cell-recovery" : `grade-level-${level.replace("th","").replace("Other","other")}`,
+        hasFail && !hasCR ? "grid-cell-has-fail" : "",
+        hasCR ? "grid-cell-has-cr" : ""
+      ].filter(Boolean).join(" "),
+      onClick: () => handleCellClick(level, col),
+      title: `${subj.label} — ${LEVEL_LABELS[level]} (click to assign grade)`
+    },
+      isActive
+        ? renderGradeSelector(level, col)
+        : e("div", { className: "grade-stack" },
+            filledGrades.length === 0
+              ? e("span", { className: "grade-empty-hint" }, "+")
+              : filledGrades.map((g, i) => {
+                  const realIdx = cell.grades.indexOf(g, i === 0 ? 0 : cell.grades.indexOf(filledGrades[i-1]) + 1);
+                  return e("span", {
+                    key: i,
+                    className: `grade-chip ${GRADE_COLOR[g] || ""} ${g === "CR" ? "grade-chip-cr" : ""}`,
+                    title: g === "CR" ? "Credit Recovery — click to remove" :
+                           g === "F"  ? "Fail — click to remove" : `${g} — click to remove`,
+                    onClick: ev => handleRemoveGrade(level, col, cell.grades.findIndex((x, xi) => x === g && xi >= (i === 0 ? 0 : 0)), ev)
+                  }, g === "CR" ? "CR★" : g);
+                })
+          )
+    );
+  };
+
+  // ── Req row ────────────────────────────────────────────────────────────────
+  const renderReqRow = () => [
+    e("div", { key: "req-label", className: "cell-req-label" }, "Req."),
+    ...SUBJECTS.map((s, i) => {
+      const req = reqCredits[s.key] || 0;
+      const have = stats.earned[s.key] || 0;
+      const met = have >= req;
+      return e("div", {
+        key: i,
+        className: `cell-req ${met ? "cell-req-met" : "cell-req-unmet"}`,
+        title: `${s.label}: ${have.toFixed(2)} earned / ${req.toFixed(2)} required`
+      }, `${have.toFixed(2)}/${req.toFixed(2)}`);
+    }),
+    e("div", { key: "req-cr", className: "cell-req cell-req-total" }, stats.totalEarned.toFixed(2)),
+    e("div", { key: "req-gpa", className: "cell-req cell-req-gpa" }, stats.gpa !== null ? stats.gpa : "—")
+  ];
+
+  // ── Standard grade level row ───────────────────────────────────────────────
+  const renderLevelRow = (level) => {
+    const ls = levelStats[level];
+    return [
+      e("div", {
+        key: `${level}-label`,
+        className: `cell-level grade-level-${level.replace("th","").replace("Other","other")}`
+      }, level),
+      ...SUBJECT_KEYS.map((_, col) => renderCell(level, col)),
+      e("div", {
+        key: `${level}-cr`,
+        className: `cell-level-stat grade-level-${level.replace("th","").replace("Other","other")}`
+      }, ls.credits > 0 ? ls.credits.toFixed(2) : "—"),
+      e("div", {
+        key: `${level}-gpa`,
+        className: `cell-level-stat grade-level-${level.replace("th","").replace("Other","other")}`
+      }, ls.gpa !== null ? ls.gpa : "—")
+    ];
+  };
+
+  // ── Recovery row ───────────────────────────────────────────────────────────
+  const renderRecoveryRow = () => {
+    const ls = levelStats["Recovery"];
+    const hasAny = SUBJECT_KEYS.some((_, col) => grid["Recovery"][col].grades.some(g => !!g));
+    return [
+      e("div", {
+        key: "recovery-label",
+        className: "cell-level cell-level-recovery",
+        title: "Credit Recovery, Summer School, Concurrent Enrollment, or Alternative Credit"
+      },
+        e("span", { className: "recovery-label-text" }, "Recovery"),
+        e("span", { className: "recovery-label-icon" }, "★")
       ),
-      React.createElement(
-        'div',
-        { className: 'flex justify-center mb-8' },
-        React.createElement(
-          'div',
-          { className: `grid ${gridLayout === "rowBased" ? "grid-row-based" : gridLayout === "transposed" ? "grid-transposed" : ""} ${gridLayout === "transposed" ? "grid-cols-[60px_repeat(5,60px)]" : "grid-cols-[60px_repeat(" + (subjects.length + 1) + ",60px)]"} gap-1 w-fit` },
-          gridLayout === "transposed"
-            ? [
-                React.createElement('div', { className: 'bg-blue-500 text-white p-2 font-bold' }, 'Subject'),
-                ...Object.keys(grid.transposed[subjects[0]]).map((level, i) =>
-                  React.createElement(
-                    'div',
-                    { key: i, className: 'bg-blue-500 text-white p-2 text-center font-bold text-xs' },
-                    level
-                  )
-                ),
-                React.createElement('div', { className: 'bg-gray-200 p-2 font-bold text-xs text-wrap' }, 'Earned/Req.'),
-                ...Object.keys(grid.transposed[subjects[0]]).map((_, i) =>
-                  React.createElement(
-                    'div',
-                    { key: i, className: 'bg-gray-200 p-2 text-center text-xs' },
-                    '-'
-                  )
-                ),
-                ...subjects.flatMap(subject =>
-                  [
-                    React.createElement(
-                      'div',
-                      { className: 'bg-blue-500 text-white p-2 text-center font-bold text-xs' },
-                      subject
-                    ),
-                    ...Object.keys(grid.transposed[subject]).map((level, col) =>
-                      React.createElement(
-                        'div',
-                        {
-                          key: col,
-                          onMouseEnter: () => handleCellHover(subject, level),
-                          onMouseLeave: handleCellLeave,
-                          className: `grid-cell p-1 border border-gray-300 cursor-pointer transition-colors relative grade-${level.toLowerCase().replace(/\dth/, '')} flex items-center justify-center text-sm`
-                        },
-                        activeCell && activeCell.key === subject && activeCell.col === level
-                          ? React.createElement(
-                              'div',
-                              { className: 'absolute inset-0 grid grid-cols-4 grid-rows-4 gap-0.5 p-0.5 bg-[var(--cell-bg)] z-50 grade-selector' },
-                              grades.map(g =>
-                                React.createElement(
-                                  'div',
-                                  {
-                                    key: g,
-                                    onClick: () => handleSelectGrade(subject, level, g),
-                                    className: 'flex items-center justify-center text-[10px] hover:bg-[var(--cell-hover)] cursor-pointer'
-                                  },
-                                  g
-                                )
-                              )
-                            )
-                          : React.createElement(
-                              'div',
-                              { className: 'grade-stack' },
-                              grid.transposed[subject][level].map((grade, i) =>
-                                React.createElement('span', { key: i }, grade || "")
-                              )
-                            )
-                      )
-                    ),
-                    React.createElement(
-                      'div',
-                      {
-                        className: `p-2 text-center text-xs text-wrap ${(earnedCredits[subject] || 0) >= (creditOption === "24" ? requiredCredits24[subject] : requiredCredits27[subject]) ? 'bg-green-200' : 'bg-gray-100'}`,
-                      },
-                      `${(earnedCredits[subject] || 0).toFixed(2)}/${(creditOption === "24" ? requiredCredits24[subject] : requiredCredits27[subject]).toFixed(2)}`
-                    )
-                  ]
-                )
-              ]
-            : [
-                React.createElement('div', { className: 'bg-blue-500 text-white p-2 font-bold' }, 'Grade'),
-                ...subjects.map((subject, i) =>
-                  React.createElement(
-                    'div',
-                    { key: i, className: 'bg-blue-500 text-white p-2 text-center font-bold text-xs' },
-                    subject
-                  )
-                ),
-                React.createElement('div', { className: 'bg-gray-200 p-2 font-bold text-xs text-wrap' }, 'Earned/Req.'),
-                React.createElement('div', { className: 'bg-gray-200 p-2 font-bold text-xs' }, 'Total Credits'),
-                ...subjects.map((subject, i) =>
-                  React.createElement(
-                    'div',
-                    {
-                      key: i,
-                      className: `p-2 text-center text-xs text-wrap ${(earnedCredits[subject] || 0) >= (creditOption === "24" ? requiredCredits24[subject] : requiredCredits27[subject]) ? 'bg-green-200' : 'bg-gray-100'}`
-                    },
-                    `${(earnedCredits[subject] || 0).toFixed(2)}/${(creditOption === "24" ? requiredCredits24[subject] : requiredCredits27[subject]).toFixed(2)}`
-                  )
-                ),
-                React.createElement(
-                  'div',
-                  { className: 'bg-gray-200 p-2 text-center text-xs' },
-                  '-'
-                ),
-                ...(gridLayout === "stacked"
-                  ? Object.keys(grid.stacked).map(gradeLevel => {
-                      console.log(`Rendering stacked mode for ${gradeLevel}:`, grid.stacked[gradeLevel]);
-                      return React.createElement(
-                        React.Fragment,
-                        { key: gradeLevel },
-                        React.createElement(
-                          'div',
-                          { className: `p-2 font-semibold flex items-center text-sm grade-${gradeLevel.toLowerCase().replace(/\dth/, '')}` },
-                          gradeLevel
-                        ),
-                        grid.stacked[gradeLevel].map((gradeArray, col) =>
-                          React.createElement(
-                            'div',
-                            {
-                              key: col,
-                              onMouseEnter: () => handleCellHover(gradeLevel, col),
-                              onMouseLeave: handleCellLeave,
-                              className: `grid-cell p-1 border border-gray-300 cursor-pointer transition-colors relative grade-${gradeLevel.toLowerCase().replace(/\dth/, '')} flex items-center justify-center text-sm`
-                            },
-                            activeCell && activeCell.key === gradeLevel && activeCell.col === col
-                              ? React.createElement(
-                                  'div',
-                                  { className: 'absolute inset-0 grid grid-cols-4 grid-rows-4 gap-0.5 p-0.5 bg-[var(--cell-bg)] z-50 grade-selector' },
-                                  grades.map(g =>
-                                    React.createElement(
-                                      'div',
-                                      {
-                                        key: g,
-                                        onClick: () => handleSelectGrade(gradeLevel, col, g),
-                                        className: 'flex items-center justify-center text-[10px] hover:bg-[var(--cell-hover)] cursor-pointer'
-                                      },
-                                      g
-                                    )
-                                  )
-                                )
-                              : React.createElement(
-                                  'div',
-                                  { className: 'grade-stack' },
-                                  gradeArray.map((grade, i) =>
-                                    React.createElement('span', { key: i }, grade || "")
-                                  )
-                                )
-                          )
-                        ),
-                        React.createElement(
-                          'div',
-                          { className: `p-2 text-center text-sm grade-${gradeLevel.toLowerCase().replace(/\dth/, '')}` },
-                          calculateTotalCreditsPerGradeLevel(gradeLevel)
-                        )
-                      );
-                    })
-                  : rowBasedKeys.map(rowKey => {
-                      console.log(`Rendering row-based mode for ${rowKey}:`, grid.rowBased[rowKey]);
-                      return React.createElement(
-                        React.Fragment,
-                        { key: rowKey },
-                        React.createElement(
-                          'div',
-                          { className: `p-2 font-semibold flex items-center text-sm grade-${rowKey.split('-')[0].toLowerCase().replace(/\dth/, '')}` },
-                          rowKey
-                        ),
-                        grid.rowBased[rowKey].map((grade, col) =>
-                          React.createElement(
-                            'div',
-                            {
-                              key: col,
-                              onMouseEnter: () => handleCellHover(rowKey, col),
-                              onMouseLeave: handleCellLeave,
-                              className: `grid-cell p-1 border border-gray-300 cursor-pointer transition-colors relative grade-${rowKey.split('-')[0].toLowerCase().replace(/\dth/, '')} flex items-center justify-center text-sm`,
-                              'data-grade': grade || ""
-                            },
-                            activeCell && activeCell.key === rowKey && activeCell.col === col
-                              ? React.createElement(
-                                  'div',
-                                  { className: 'absolute inset-0 grid grid-cols-4 grid-rows-4 gap-0.5 p-0.5 bg-[var(--cell-bg)] z-50 grade-selector' },
-                                  grades.map(g =>
-                                    React.createElement(
-                                      'div',
-                                      {
-                                        key: g,
-                                        onClick: () => handleSelectGrade(rowKey, col, g),
-                                        className: 'flex items-center justify-center text-[10px] hover:bg-[var(--cell-hover)] cursor-pointer'
-                                      },
-                                      g
-                                    )
-                                  )
-                                )
-                              : null
-                          )
-                        ),
-                        rowKey.endsWith('-1')
-                          ? React.createElement(
-                              'div',
-                              {
-                                className: `p-2 text-center text-sm grade-${rowKey.split('-')[0].toLowerCase().replace(/\dth/, '')}`,
-                                style: { gridRow: 'span 4' }
-                              },
-                              calculateTotalCreditsPerGradeLevel(rowKey.split('-')[0])
-                            )
-                          : null
-                      );
-                    })
-                )
-              ]
-        )
+      ...SUBJECT_KEYS.map((_, col) => renderCell("Recovery", col)),
+      e("div", { key: "recovery-cr", className: "cell-level-stat cell-level-recovery" },
+        ls.credits > 0 ? ls.credits.toFixed(2) : "—"
       ),
-      React.createElement(
-        'div',
-        { className: 'flex justify-center mb-4' },
-        React.createElement(
-          'div',
-          { className: 'flex space-x-2' },
-          ['A', 'B', 'C', 'D', 'F'].map(grade =>
-            React.createElement(
-              'button',
-              {
-                key: grade,
-                onClick: () => handleFillGrid(grade),
-                className: 'bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors'
-              },
-              `Fill with ${grade}`
-            )
+      e("div", { key: "recovery-gpa", className: "cell-level-stat cell-level-recovery" },
+        ls.gpa !== null ? ls.gpa : "—"
+      )
+    ];
+  };
+
+  // ── Grid tab ───────────────────────────────────────────────────────────────
+  const renderGridTab = () => {
+    const standardLevels = GRADE_LEVELS.filter(lv => lv !== "Recovery");
+    return e("div", { className: "grid-tab" },
+      e("div", { className: "subject-grid" },
+        // Header row
+        e("div", { className: "cell-header cell-corner" }, "Year"),
+        ...SUBJECTS.map((s, i) =>
+          e("div", {
+            key: i,
+            className: "cell-header cell-subject",
+            title: s.note,
+            onMouseEnter: () => setShowSubjectInfo(i),
+            onMouseLeave: () => setShowSubjectInfo(null)
+          },
+            e("span", null, s.abbr),
+            showSubjectInfo === i && e("div", { className: "subject-tooltip" }, s.note)
+          )
+        ),
+        e("div", { className: "cell-header cell-credits" }, "Cr"),
+        e("div", { className: "cell-header cell-gpa-h" }, "GPA"),
+
+        // Req row
+        ...renderReqRow(),
+
+        // Standard grade level rows
+        ...standardLevels.flatMap(lv => renderLevelRow(lv)),
+
+        // Recovery row separator
+        e("div", { key: "sep", className: "recovery-separator", style: { gridColumn: `1 / -1` } },
+          e("span", null, "★ Credit Recovery / Alternative Credit — Enter CR for recovered courses, or the actual earned grade")
+        ),
+
+        // Recovery row
+        ...renderRecoveryRow()
+      ),
+
+      // Recovery explainer
+      e("div", { className: "recovery-explainer" },
+        e("div", { className: "recovery-explainer-title" }, "★ How Credit Recovery Works in This Planner"),
+        e("div", { className: "recovery-explainer-body" },
+          e("p", null,
+            e("strong", null, "F grade: "),
+            "Enter F in the year the course was failed. This adds 0.0 quality points to your GPA and counts in the denominator — it permanently affects your GPA."
           ),
-          React.createElement(
-            'button',
-            {
-              onClick: handleFillRandom,
-              className: 'bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors'
-            },
-            'Fill with Random'
+          e("p", null,
+            e("strong", null, "CR (Credit Recovery): "),
+            "Enter CR in the Recovery row for the same subject. This earns 0.25 credits and counts as a C (2.0) in your GPA — representing the typical credit recovery completion standard."
+          ),
+          e("p", null,
+            e("strong", null, "Actual grade earned: "),
+            "If your school assigns a real letter grade for the recovery course (e.g., B-), enter that grade instead of CR in the Recovery row."
+          ),
+          e("p", null,
+            e("strong", null, "Summer school / concurrent enrollment: "),
+            "Use the Recovery row for any course taken outside the normal 4-year sequence, including summer school, online courses, or college concurrent enrollment."
           )
         )
+      ),
+
+      // Quick-fill bar
+      e("div", { className: "quick-fill-bar" },
+        e("span", { className: "quick-fill-label" }, "Quick Fill:"),
+        ["A","B","C","D","F"].map(g =>
+          e("button", {
+            key: g,
+            className: `quick-btn quick-btn-${g.toLowerCase()}`,
+            onClick: () => fillAll(g),
+            title: `Fill all required slots with ${g}`
+          }, `All ${g}`)
+        ),
+        e("button", { className: "quick-btn quick-btn-random", onClick: fillRandom, title: "Fill with realistic weighted-random grades" }, "Random"),
+        e("div", { className: "quick-fill-sep" }),
+        e("span", { className: "quick-fill-label" }, "Scenarios:"),
+        e("button", {
+          className: "quick-btn quick-btn-bad-year",
+          onClick: () => fillBadYear("9th"),
+          title: "Simulate failing core courses in 9th grade + credit recovery"
+        }, "Bad 9th + Recovery"),
+        e("button", {
+          className: "quick-btn quick-btn-bad-year",
+          onClick: () => fillBadYear("10th"),
+          title: "Simulate failing core courses in 10th grade + credit recovery"
+        }, "Bad 10th + Recovery"),
+        e("button", {
+          className: "quick-btn quick-btn-bad-year",
+          onClick: () => fillBadYear("11th"),
+          title: "Simulate failing core courses in 11th grade + credit recovery"
+        }, "Bad 11th + Recovery"),
+        e("div", { className: "quick-fill-sep" }),
+        e("button", { className: "quick-btn quick-btn-clear", onClick: clearAll }, "Clear All")
       )
-    ),
-    React.createElement(
-      'footer',
-      { className: 'footer' },
-      React.createElement('p', null, `Credits Needed to Graduate: ${creditsNeeded.toFixed(2)}`),
-      React.createElement('p', null, `Total Credits: ${totalCredits.toFixed(2)}`),
-      React.createElement('p', null, `GPA: ${gpa}`),
-      React.createElement(
-        'p',
-        null,
-        'Data Source: ',
-        React.createElement(
-          'a',
-          { href: 'https://www.schools.utah.gov/curr/graduationrequirements', target: '_blank', rel: 'noopener noreferrer' },
-          'Utah State Board of Education Graduation Requirements'
+    );
+  };
+
+  // ── Projection tab ─────────────────────────────────────────────────────────
+  const renderProjectionTab = () => {
+    const { qp, denom, remaining, scenarios, customNeeded } = projectionData;
+    const currentGPA = denom > 0 ? +(qp / denom).toFixed(3) : null;
+
+    return e("div", { className: "projection-tab" },
+      e("h2", { className: "section-title" }, "Graduation Planning & GPA Projection"),
+      e("p", { className: "section-desc" },
+        "Shows what average grade you need in remaining courses to reach a target GPA. ",
+        "All grades already entered (including F and CR) are included in the current GPA. ",
+        "Remaining credits are the gap between what you have earned and your graduation path requirement."
+      ),
+
+      // Snapshot cards
+      e("div", { className: "projection-snapshot" },
+        e("div", { className: "snapshot-card" },
+          e("div", { className: "snapshot-value" }, currentGPA !== null ? currentGPA : "—"),
+          e("div", { className: "snapshot-label" }, "Current GPA"),
+          currentGPA !== null && e("div", { className: "snapshot-sub" }, gpaToLetter(currentGPA))
+        ),
+        e("div", { className: "snapshot-card" },
+          e("div", { className: "snapshot-value" }, stats.totalEarned.toFixed(2)),
+          e("div", { className: "snapshot-label" }, "Credits Earned"),
+          e("div", { className: "snapshot-sub" }, `of ${creditPath} required`)
+        ),
+        e("div", { className: "snapshot-card" },
+          e("div", { className: "snapshot-value" }, remaining.toFixed(2)),
+          e("div", { className: "snapshot-label" }, "Credits Remaining"),
+          e("div", { className: "snapshot-sub" }, remaining > 0 ? "to graduate" : "✓ Complete")
+        ),
+        e("div", { className: "snapshot-card" },
+          e("div", { className: "snapshot-value" }, stats.gpaDenominator.toFixed(2)),
+          e("div", { className: "snapshot-label" }, "GPA Denominator"),
+          e("div", { className: "snapshot-sub" }, "incl. all F grades")
         )
       ),
-      React.createElement(
-        'p',
-        { className: 'note' },
-        "Note: 'P' (Pass) and 'P+' grant credit but do not affect GPA. 'F' affects GPA but does not grant credit."
+
+      // Custom target slider
+      e("div", { className: "custom-target-row" },
+        e("label", { className: "custom-target-label" }, "My Target GPA:"),
+        e("input", {
+          type: "range", min: 1.0, max: 4.0, step: 0.05,
+          value: targetGPA,
+          onChange: ev => setTargetGPA(parseFloat(ev.target.value)),
+          className: "target-slider"
+        }),
+        e("span", { className: "target-value" }, targetGPA.toFixed(2)),
+        e("span", { className: "target-letter" }, `(${gpaToLetter(targetGPA)})`),
+        customNeeded !== null && e("div", {
+          className: `needed-result ${customNeeded > 4.0 ? "needed-impossible" : customNeeded < 0 ? "needed-done" : customNeeded > 3.3 ? "needed-hard" : "needed-ok"}`
+        },
+          customNeeded > 4.0
+            ? `⚠ Not achievable — would need ${customNeeded.toFixed(2)} avg (max is 4.0). Consider the ${creditPath === "24" ? "27" : "24"}-credit path or speak with your counselor.`
+            : customNeeded < 0
+            ? `✓ Already achieved — your current GPA of ${currentGPA} already exceeds ${targetGPA.toFixed(2)}`
+            : `To reach ${targetGPA.toFixed(2)} GPA, you need an average of ${customNeeded.toFixed(2)} (${gpaToLetter(customNeeded)}) across your remaining ${remaining.toFixed(2)} credits`
+        )
       ),
-      React.createElement('p', { className: 'copyright' }, '© 2025 All Rights Reserved')
+
+      // Scenario table
+      e("div", { className: "scenario-section" },
+        e("h3", { className: "scenario-title" }, "All GPA Target Scenarios"),
+        e("table", { className: "scenario-table" },
+          e("thead", null,
+            e("tr", null,
+              e("th", null, "Target GPA"),
+              e("th", null, "Avg Grade Needed"),
+              e("th", null, "Letter"),
+              e("th", null, "Assessment")
+            )
+          ),
+          e("tbody", null,
+            scenarios.map((s, i) =>
+              e("tr", { key: i, className: s.feasible ? "" : "scenario-infeasible" },
+                e("td", null, s.target.toFixed(2)),
+                e("td", { className: "tc" }, s.needed !== null ? s.needed.toFixed(3) : "—"),
+                e("td", { className: "tc" }, s.letter),
+                e("td", null,
+                  s.needed === null ? "No remaining credits"
+                  : s.needed < 0 ? "✓ Already exceeded"
+                  : s.feasible ? "✓ Achievable"
+                  : `✗ Requires ${s.needed.toFixed(2)} — exceeds 4.0 maximum`
+                )
+              )
+            )
+          )
+        )
+      ),
+
+      // Per-year breakdown
+      e("div", { className: "year-breakdown" },
+        e("h3", { className: "scenario-title" }, "GPA & Credits by Year"),
+        e("div", { className: "year-breakdown-grid" },
+          GRADE_LEVELS.map(lv => {
+            const ls = levelStats[lv];
+            const pct = ls.gpa !== null ? Math.min(100, (ls.gpa / 4.0) * 100) : 0;
+            const barColor = ls.gpa !== null ? (ls.gpa >= 3.0 ? "#22c55e" : ls.gpa >= 2.0 ? "#f59e0b" : "#ef4444") : "#e2e8f0";
+            return e("div", {
+              key: lv,
+              className: `year-card ${lv === "Recovery" ? "year-card-recovery" : ""}`
+            },
+              e("div", {
+                className: `year-card-label ${lv === "Recovery" ? "year-card-label-recovery" : `grade-level-${lv.replace("th","").replace("Other","other")}`}`
+              }, lv === "Recovery" ? "Recovery ★" : lv),
+              e("div", { className: "year-card-gpa" }, ls.gpa !== null ? ls.gpa.toFixed(3) : "—"),
+              e("div", { className: "year-card-credits" }, `${ls.credits.toFixed(2)} cr`),
+              ls.fCount > 0 && e("div", { className: "year-card-badge year-card-badge-f" }, `${ls.fCount}×F`),
+              ls.crCount > 0 && e("div", { className: "year-card-badge year-card-badge-cr" }, `${ls.crCount}×CR`),
+              ls.gpa !== null && e("div", { className: "gpa-bar-wrap" },
+                e("div", { className: "gpa-bar-track" },
+                  e("div", { className: "gpa-bar-fill", style: { width: `${pct}%`, backgroundColor: barColor } })
+                )
+              )
+            );
+          })
+        )
+      )
+    );
+  };
+
+  // ── Report tab ─────────────────────────────────────────────────────────────
+  const renderReportTab = () => {
+    const { qp, denom, remaining, customNeeded } = projectionData;
+    const currentGPA = denom > 0 ? +(qp / denom).toFixed(3) : null;
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("en-US", { year:"numeric", month:"long", day:"numeric" });
+    const totalFails = GRADE_LEVELS.reduce((sum, lv) => sum + levelStats[lv].fCount, 0);
+    const totalCR    = GRADE_LEVELS.reduce((sum, lv) => sum + levelStats[lv].crCount, 0);
+
+    return e("div", { className: "report-tab" },
+      e("div", { className: "report-header" },
+        e("div", null,
+          e("h1", { className: "report-title" }, "Utah GPA Planner — Graduation Progress Report"),
+          e("div", { className: "report-meta" },
+            studentName && e("span", null, `Student: ${studentName}  ·  `),
+            e("span", null, `Generated: ${dateStr}  ·  `),
+            e("span", null, `Graduation Path: ${creditPath}-Credit Diploma`)
+          )
+        ),
+        e("button", { className: "print-btn no-print", onClick: () => window.print() }, "🖨 Print / Save PDF")
+      ),
+
+      // Summary
+      e("div", { className: "report-summary" },
+        e("div", { className: "report-stat-card" },
+          e("div", { className: "report-stat-value" }, currentGPA !== null ? currentGPA : "—"),
+          e("div", { className: "report-stat-label" }, "Cumulative GPA"),
+          currentGPA !== null && e("div", { className: "report-stat-sub" }, gpaToLetter(currentGPA))
+        ),
+        e("div", { className: "report-stat-card" },
+          e("div", { className: "report-stat-value" }, stats.totalEarned.toFixed(2)),
+          e("div", { className: "report-stat-label" }, "Credits Earned"),
+          e("div", { className: "report-stat-sub" }, `of ${creditPath} required`)
+        ),
+        e("div", { className: "report-stat-card" },
+          e("div", { className: "report-stat-value" }, remaining.toFixed(2)),
+          e("div", { className: "report-stat-label" }, "Credits Remaining"),
+          e("div", { className: "report-stat-sub" }, remaining > 0 ? "to graduate" : "✓ Requirements met")
+        ),
+        totalFails > 0 && e("div", { className: "report-stat-card report-stat-card-warn" },
+          e("div", { className: "report-stat-value" }, totalFails),
+          e("div", { className: "report-stat-label" }, "F Grades"),
+          e("div", { className: "report-stat-sub" }, totalCR > 0 ? `${totalCR} recovered via CR` : "No recovery recorded")
+        ),
+        customNeeded !== null && e("div", { className: "report-stat-card" },
+          e("div", { className: "report-stat-value" },
+            customNeeded <= 4.0 && customNeeded >= 0 ? customNeeded.toFixed(2) : "—"
+          ),
+          e("div", { className: "report-stat-label" }, `Needed for ${targetGPA.toFixed(2)} GPA`),
+          e("div", { className: "report-stat-sub" },
+            customNeeded > 4.0 ? "Not achievable" : customNeeded < 0 ? "Already met" : gpaToLetter(customNeeded)
+          )
+        )
+      ),
+
+      // Credit progress by subject
+      e("div", { className: "report-section" },
+        e("h2", { className: "report-section-title" }, "Credit Progress by Subject"),
+        e("table", { className: "report-table" },
+          e("thead", null,
+            e("tr", null,
+              e("th", null, "Subject"),
+              e("th", { className: "tc" }, "Required"),
+              e("th", { className: "tc" }, "Earned"),
+              e("th", { className: "tc" }, "Remaining"),
+              e("th", null, "Status"),
+              e("th", null, "Progress")
+            )
+          ),
+          e("tbody", null,
+            SUBJECTS.map((s, i) => {
+              const req = reqCredits[s.key] || 0;
+              const have = stats.earned[s.key] || 0;
+              const rem = Math.max(0, req - have);
+              const pct = req > 0 ? Math.min(100, (have / req) * 100) : 100;
+              const met = have >= req;
+              return e("tr", { key: i, className: met ? "" : "row-unmet" },
+                e("td", null,
+                  e("strong", null, s.abbr), " ",
+                  e("small", { className: "text-muted" }, s.label)
+                ),
+                e("td", { className: "tc" }, req.toFixed(2)),
+                e("td", { className: "tc" }, have.toFixed(2)),
+                e("td", { className: "tc" }, rem > 0 ? rem.toFixed(2) : "—"),
+                e("td", { className: met ? "status-met" : "status-unmet" }, met ? "✓ Met" : `${rem.toFixed(2)} cr needed`),
+                e("td", null,
+                  e("div", { className: "progress-track" },
+                    e("div", {
+                      className: `progress-fill ${met ? "progress-met" : "progress-partial"}`,
+                      style: { width: `${pct}%` }
+                    })
+                  )
+                )
+              );
+            })
+          )
+        )
+      ),
+
+      // Per-year GPA
+      e("div", { className: "report-section" },
+        e("h2", { className: "report-section-title" }, "GPA by Grade Level"),
+        e("table", { className: "report-table" },
+          e("thead", null,
+            e("tr", null,
+              e("th", null, "Level"),
+              e("th", { className: "tc" }, "Credits"),
+              e("th", { className: "tc" }, "GPA"),
+              e("th", { className: "tc" }, "Letter"),
+              e("th", { className: "tc" }, "F Grades"),
+              e("th", { className: "tc" }, "CR Recovered"),
+              e("th", null, "Visual")
+            )
+          ),
+          e("tbody", null,
+            GRADE_LEVELS.map(lv => {
+              const ls = levelStats[lv];
+              const pct = ls.gpa !== null ? Math.min(100, (ls.gpa / 4.0) * 100) : 0;
+              const barColor = ls.gpa !== null ? (ls.gpa >= 3.0 ? "#22c55e" : ls.gpa >= 2.0 ? "#f59e0b" : "#ef4444") : "#e2e8f0";
+              return e("tr", { key: lv, className: lv === "Recovery" ? "row-recovery" : "" },
+                e("td", null, lv === "Recovery" ? "★ Recovery" : lv),
+                e("td", { className: "tc" }, ls.credits > 0 ? ls.credits.toFixed(2) : "—"),
+                e("td", { className: "tc" }, ls.gpa !== null ? ls.gpa.toFixed(3) : "—"),
+                e("td", { className: "tc" }, ls.gpa !== null ? gpaToLetter(ls.gpa) : "—"),
+                e("td", { className: `tc ${ls.fCount > 0 ? "status-unmet" : ""}` }, ls.fCount > 0 ? ls.fCount : "—"),
+                e("td", { className: `tc ${ls.crCount > 0 ? "status-cr" : ""}` }, ls.crCount > 0 ? ls.crCount : "—"),
+                e("td", null,
+                  ls.gpa !== null && e("div", { className: "progress-track" },
+                    e("div", { className: "progress-fill", style: { width: `${pct}%`, backgroundColor: barColor } })
+                  )
+                )
+              );
+            })
+          )
+        )
+      ),
+
+      // Projection scenarios
+      e("div", { className: "report-section" },
+        e("h2", { className: "report-section-title" }, "GPA Projection Scenarios"),
+        e("p", { className: "report-note" },
+          `${remaining.toFixed(2)} credits remaining. `,
+          `Current quality points: ${qp.toFixed(3)}, GPA denominator: ${denom.toFixed(2)}. `,
+          totalFails > 0 && `Note: ${totalFails} F grade(s) are permanently included in the denominator.`
+        ),
+        e("table", { className: "report-table" },
+          e("thead", null,
+            e("tr", null,
+              e("th", null, "Target GPA"),
+              e("th", { className: "tc" }, "Avg Grade Needed"),
+              e("th", { className: "tc" }, "Letter"),
+              e("th", null, "Assessment")
+            )
+          ),
+          e("tbody", null,
+            projectionData.scenarios.map((s, i) =>
+              e("tr", { key: i, className: s.feasible ? "" : "scenario-infeasible" },
+                e("td", null, s.target.toFixed(2)),
+                e("td", { className: "tc" }, s.needed !== null ? s.needed.toFixed(3) : "—"),
+                e("td", { className: "tc" }, s.letter),
+                e("td", null,
+                  s.needed === null ? "No remaining credits"
+                  : s.needed < 0 ? "✓ Already exceeded"
+                  : s.feasible ? "✓ Achievable"
+                  : `✗ Requires ${s.needed.toFixed(2)} — exceeds 4.0 maximum`
+                )
+              )
+            )
+          )
+        )
+      ),
+
+      // Legal / counselor note
+      e("div", { className: "report-footer" },
+        e("p", null,
+          "Credit requirements per Utah Admin. Code R277-700-6 (amended June 2024). ",
+          "Individual LEA boards may require credits exceeding state minimums. ",
+          "Verify all requirements with your school counselor before making academic decisions."
+        ),
+        e("p", null,
+          "GPA note: F grades permanently affect GPA (0.0 quality points, counted in denominator). ",
+          "CR (Credit Recovery) entries count as C (2.0) in GPA and earn 0.25 credits. ",
+          "P/P+ grades earn credit but are excluded from GPA calculation."
+        ),
+        e("p", null, `© ${now.getFullYear()} Utah GPA Planner`)
+      )
+    );
+  };
+
+  // ── Main render ────────────────────────────────────────────────────────────
+  return e("div", { className: "app-wrapper" },
+    e("nav", { className: "navbar no-print" },
+      e("div", { className: "navbar-inner" },
+        e("div", { className: "navbar-brand" }, "Utah GPA Planner"),
+        e("div", { className: "navbar-controls" },
+          e("label", { className: "nav-label" }, "Student:"),
+          e("input", {
+            type: "text", placeholder: "Name (optional)",
+            value: studentName,
+            onChange: ev => setStudentName(ev.target.value),
+            className: "nav-input"
+          }),
+          e("label", { className: "nav-label" }, "Path:"),
+          e("select", {
+            value: creditPath,
+            onChange: ev => setCreditPath(ev.target.value),
+            className: "nav-select"
+          },
+            e("option", { value: "24" }, "24-Credit Diploma"),
+            e("option", { value: "27" }, "27-Credit Advanced")
+          ),
+          e("button", {
+            className: "theme-btn",
+            onClick: () => setTheme(t => t === "light" ? "dark" : "light")
+          }, theme === "light" ? "🌙 Dark" : "☀️ Light")
+        )
+      ),
+      e("div", { className: "tab-bar" },
+        [
+          { id: "grid",       label: "📊 Grade Grid" },
+          { id: "projection", label: "🎯 GPA Projection" },
+          { id: "report",     label: "📄 Report" }
+        ].map(t =>
+          e("button", {
+            key: t.id,
+            className: `tab-btn ${tab === t.id ? "tab-btn-active" : ""}`,
+            onClick: () => setTab(t.id)
+          }, t.label)
+        )
+      )
+    ),
+
+    e("main", { className: "main-content" },
+      e("div", { className: "content-wrapper" },
+        tab === "grid"       ? renderGridTab()
+        : tab === "projection" ? renderProjectionTab()
+        : renderReportTab()
+      )
+    ),
+
+    e("footer", { className: "app-footer no-print" },
+      e("div", { className: "footer-stats" },
+        e("span", { className: "footer-stat" }, `GPA: ${stats.gpa !== null ? stats.gpa : "—"}`),
+        e("span", { className: "footer-sep" }, "|"),
+        e("span", { className: "footer-stat" }, `Credits: ${stats.totalEarned.toFixed(2)} / ${creditPath}`),
+        e("span", { className: "footer-sep" }, "|"),
+        e("span", {
+          className: `footer-stat ${stats.creditsNeeded > 0 ? "footer-stat-warn" : "footer-stat-ok"}`
+        }, stats.creditsNeeded > 0 ? `${stats.creditsNeeded.toFixed(2)} cr still needed` : "✓ Graduation requirements met")
+      ),
+      e("div", { className: "footer-note" },
+        "Requirements per ",
+        e("a", { href: "https://www.schools.utah.gov/curr/graduationrequirements", target: "_blank", rel: "noopener noreferrer" },
+          "Utah Admin. Code R277-700-6"
+        ),
+        ". P/P+ = credit only, no GPA impact. F = GPA impact, no credit. CR = credit recovery (earns credit, counts as C in GPA)."
+      )
     )
   );
-};
+}
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(React.createElement(App));
+root.render(e(App));

@@ -461,26 +461,72 @@ html, body {
 }
 .recovery-explainer-body strong { color: var(--text); }
 
-/* ── Quick fill bar ───────────────────────────────────────────────────────── */
-.quick-fill-bar {
+/* ── Quick fill panel (two-row layout) ──────────────────────────────────── */
+.quick-fill-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 10px 14px 8px;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.quick-fill-row {
   display: flex;
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
-  padding: 10px 0 4px;
 }
 .quick-fill-label {
   font-size: .75rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-muted);
   white-space: nowrap;
+  min-width: 68px;
 }
 .quick-fill-sep {
   width: 1px;
   height: 20px;
   background: var(--border);
-  margin: 0 4px;
+  margin: 0 2px;
+  flex-shrink: 0;
 }
+.quick-fill-note {
+  font-size: .72rem;
+  color: var(--text-muted);
+  padding-top: 2px;
+  border-top: 1px solid var(--border);
+  line-height: 1.5;
+}
+
+/* Year selector tabs */
+.year-selector {
+  display: flex;
+  gap: 3px;
+  background: var(--surface2);
+  border-radius: var(--radius);
+  padding: 2px;
+}
+.year-tab {
+  padding: 3px 10px;
+  border-radius: calc(var(--radius) - 2px);
+  border: none;
+  cursor: pointer;
+  font-size: .75rem;
+  font-weight: 700;
+  background: transparent;
+  color: var(--text-muted);
+  transition: background .15s, color .15s;
+}
+.year-tab:hover { background: var(--surface); color: var(--text); }
+.year-tab-active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,.18);
+}
+
+/* Quick-fill buttons */
 .quick-btn {
   padding: 5px 12px;
   border-radius: var(--radius);
@@ -489,15 +535,16 @@ html, body {
   font-size: .78rem;
   font-weight: 700;
   transition: transform .1s, box-shadow .1s;
+  white-space: nowrap;
 }
 .quick-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
-.quick-btn-a     { background: #16a34a; color: #fff; }
-.quick-btn-b     { background: #3b82f6; color: #fff; }
-.quick-btn-c     { background: #fbbf24; color: #1e293b; }
-.quick-btn-d     { background: #f97316; color: #fff; }
-.quick-btn-f     { background: #dc2626; color: #fff; }
+.quick-btn-a      { background: #16a34a; color: #fff; }
+.quick-btn-b      { background: #3b82f6; color: #fff; }
+.quick-btn-c      { background: #fbbf24; color: #1e293b; }
+.quick-btn-d      { background: #f97316; color: #fff; }
+.quick-btn-f      { background: #dc2626; color: #fff; }
 .quick-btn-random { background: #8b5cf6; color: #fff; }
-.quick-btn-bad-year { background: var(--recovery); color: #fff; font-size: .72rem; padding: 5px 10px; }
+.quick-btn-bad-year { background: var(--recovery); color: #fff; }
 .quick-btn-clear  { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
 
 /* ── Projection tab ───────────────────────────────────────────────────────── */

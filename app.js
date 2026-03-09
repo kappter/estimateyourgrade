@@ -69,15 +69,16 @@ const LEVEL_LABELS = {
 
 // ── Slots per subject per grade level ─────────────────────────────────────────
 // Standard rows: 4 slots (1.0 cr max per year — typical semester or quarter load)
+// EL column:     12 slots per year (electives are the most flexible category;
+//                supports 8.0 cr/year distribution which needs up to 10 EL slots)
 // Recovery row:  8 slots per subject (students may recover multiple courses)
-// EL column:     8 slots per year (electives are the most flexible category)
-// EL + Recovery: 12 slots (maximum flexibility for recovered elective credits)
+// EL + Recovery: 16 slots (maximum flexibility for recovered elective credits)
 const SLOTS_PER_CELL = (subjKey, level) => {
   const isRecovery = level === "Recovery";
   const isEL = subjKey === "EL";
-  if (isRecovery && isEL) return 12;
+  if (isRecovery && isEL) return 16;
   if (isRecovery) return 8;
-  if (isEL) return 8;
+  if (isEL) return 12;
   return 4;
 };
 
@@ -309,71 +310,155 @@ function App() {
   }, [setGrade]);
 
   // ── Fill helpers ───────────────────────────────────────────────────────────
-  const fillAll = useCallback((fillGrade) => {
-    setGrid(() => {
-      const next = emptyStackedGrid();
-      // Only fill the standard rows (not Recovery)
-      const standardLevels = GRADE_LEVELS.filter(lv => lv !== "Recovery");
-      SUBJECT_KEYS.forEach((subj, col) => {
-        const totalSlots = Math.round(reqCredits[subj] / CREDIT_PER_COURSE);
-        const maxPerCell = SLOTS_PER_CELL(subj, "9th");
-        let filled = 0;
-        for (let li = 0; li < standardLevels.length && filled < totalSlots; li++) {
-          const lv = standardLevels[li];
-          for (let si = 0; si < maxPerCell && filled < totalSlots; si++) {
-            next[lv][col].grades[si] = fillGrade;
-            filled++;
-          }
-        }
-      });
-      return next;
-    });
-  }, [reqCredits]);
+  // Standard Utah public school load: 8.0 credits per year (32 quarter-credit slots).
+  // Distribution below mirrors a typical 8-period day across 11 subject categories.
+  // Each entry = number of 0.25-credit slots assigned to that subject for one year.
+  // Subjects: LA, MA, SC, SS, Art, PE, CTE, HE, FL, DS, EL
+  // Total per year = 32 slots = 8.0 credits ✓
+  const YEAR_DISTRIBUTION = {
+    "9th":  [4, 4, 4, 4, 2, 2, 2, 2, 2, 2, 4],  // 32 slots — 9th: LA+MA+SC+SS heavy, intro electives
+    "10th": [4, 4, 4, 4, 2, 2, 2, 0, 0, 0, 10], // 32 slots — 10th: core + more electives (HE/FL/DS done)
+    "11th": [4, 4, 4, 4, 2, 2, 2, 0, 0, 0, 10], // 32 slots — 11th: same pattern, elective-heavy
+    "12th": [4, 4, 4, 4, 2, 2, 2, 0, 0, 0, 10], // 32 slots — 12th: finishing requirements + electives
+    "Other":[4, 4, 4, 4, 2, 2, 2, 0, 0, 0, 10], // 32 slots — transfer/other year
+  };
+  // Note: HE (0.5 cr), FL (0.5 cr), DS (0.5 cr) are typically completed in 9th grade
+  // and appear as 2 slots each that year. Remaining years leave those at 0.
 
-  const fillRandom = useCallback(() => {
-    // Weighted random — more realistic distribution
+  // Fill a single grade level row with a given grade, respecting the 8.0-credit distribution
+  const fillLevel = useCallback((level, fillGrade, targetGrid) => {
+    const dist = YEAR_DISTRIBUTION[level];
+    if (!dist) return targetGrid;
+    SUBJECT_KEYS.forEach((subj, col) => {
+      const slots = dist[col];
+      const maxSlots = SLOTS_PER_CELL(subj, level);
+      for (let si = 0; si < Math.min(slots, maxSlots); si++) {
+        if (!targetGrid[level][col].grades[si]) {
+          targetGrid[level][col].grades[si] = fillGrade;
+        }
+      }
+    });
+    return targetGrid;
+  }, []);
+
+  // Fill a single grade level row with random grades
+  const fillLevelRandom = useCallback((level, targetGrid) => {
     const weightedGrades = [
       "A","A","A-","A-","B+","B","B","B-","B-","C+","C","C","C-","D+","D","D-"
     ];
+    const dist = YEAR_DISTRIBUTION[level];
+    if (!dist) return targetGrid;
+    SUBJECT_KEYS.forEach((subj, col) => {
+      const slots = dist[col];
+      const maxSlots = SLOTS_PER_CELL(subj, level);
+      for (let si = 0; si < Math.min(slots, maxSlots); si++) {
+        if (!targetGrid[level][col].grades[si]) {
+          targetGrid[level][col].grades[si] = weightedGrades[Math.floor(Math.random() * weightedGrades.length)];
+        }
+      }
+    });
+    return targetGrid;
+  }, []);
+
+  // Fill all standard years with a given grade (for the global quick-fill buttons)
+  const fillAll = useCallback((fillGrade) => {
     setGrid(() => {
       const next = emptyStackedGrid();
-      const standardLevels = GRADE_LEVELS.filter(lv => lv !== "Recovery");
+      ["9th","10th","11th","12th"].forEach(lv => fillLevel(lv, fillGrade, next));
+      return next;
+    });
+  }, [fillLevel]);
+
+  const fillRandom = useCallback(() => {
+    setGrid(() => {
+      const next = emptyStackedGrid();
+      ["9th","10th","11th","12th"].forEach(lv => fillLevelRandom(lv, next));
+      return next;
+    });
+  }, [fillLevelRandom]);
+
+  // Fill a single year with a specific grade (per-year quick-fill)
+  const fillYearGrade = useCallback((level, fillGrade) => {
+    setGrid(prev => {
+      const next = JSON.parse(JSON.stringify(prev));
+      // Clear the target level first, then fill
       SUBJECT_KEYS.forEach((subj, col) => {
-        const totalSlots = Math.round(reqCredits[subj] / CREDIT_PER_COURSE);
-        const maxPerCell = SLOTS_PER_CELL(subj, "9th");
-        let filled = 0;
-        for (let li = 0; li < standardLevels.length && filled < totalSlots; li++) {
-          const lv = standardLevels[li];
-          for (let si = 0; si < maxPerCell && filled < totalSlots; si++) {
-            next[lv][col].grades[si] = weightedGrades[Math.floor(Math.random() * weightedGrades.length)];
-            filled++;
+        const maxSlots = SLOTS_PER_CELL(subj, level);
+        next[level][col].grades = Array(maxSlots).fill("");
+      });
+      fillLevel(level, fillGrade, next);
+      return next;
+    });
+  }, [fillLevel]);
+
+  // Fill a single year with random grades
+  const fillYearRandom = useCallback((level) => {
+    setGrid(prev => {
+      const next = JSON.parse(JSON.stringify(prev));
+      SUBJECT_KEYS.forEach((subj, col) => {
+        const maxSlots = SLOTS_PER_CELL(subj, level);
+        next[level][col].grades = Array(maxSlots).fill("");
+      });
+      fillLevelRandom(level, next);
+      return next;
+    });
+  }, [fillLevelRandom]);
+
+  // "Bad year" scenario — simulate a rough year then recovery
+  // Fills the year with the 8.0-credit distribution, fails core subjects,
+  // then adds CR recovery entries for each failed course.
+  const fillBadYear = useCallback((badYear) => {
+    setGrid(prev => {
+      const next = JSON.parse(JSON.stringify(prev));
+      const dist = YEAR_DISTRIBUTION[badYear];
+      if (!dist) return next;
+
+      // First fill the whole year with B grades (baseline passing year)
+      SUBJECT_KEYS.forEach((subj, col) => {
+        const slots = dist[col];
+        const maxSlots = SLOTS_PER_CELL(subj, badYear);
+        next[badYear][col].grades = Array(maxSlots).fill("");
+        for (let si = 0; si < Math.min(slots, maxSlots); si++) {
+          next[badYear][col].grades[si] = "B";
+        }
+      });
+
+      // Then fail the core academic subjects (LA, MA, SC — 2 slots each = 0.5 cr each)
+      const coreFails = ["LA", "MA", "SC"];
+      coreFails.forEach(subj => {
+        const col = SUBJECT_KEYS.indexOf(subj);
+        if (col < 0) return;
+        const slotsToFail = Math.min(2, dist[col]); // fail 2 slots (0.5 cr) per subject
+        for (let si = 0; si < slotsToFail; si++) {
+          next[badYear][col].grades[si] = "F";
+        }
+      });
+
+      // Add CR recovery entries in the Recovery row for each failed subject
+      coreFails.forEach(subj => {
+        const col = SUBJECT_KEYS.indexOf(subj);
+        if (col < 0) return;
+        const maxRecovery = SLOTS_PER_CELL(subj, "Recovery");
+        // Find next empty slots in recovery row
+        let placed = 0;
+        for (let si = 0; si < maxRecovery && placed < 2; si++) {
+          if (!next["Recovery"][col].grades[si]) {
+            next["Recovery"][col].grades[si] = "CR";
+            placed++;
           }
         }
       });
+
       return next;
     });
-  }, [reqCredits]);
+  }, []);
 
-  // "Bad year" scenario — simulate a rough year then recovery
-  const fillBadYear = useCallback((badYear) => {
+  const clearYear = useCallback((level) => {
     setGrid(prev => {
-      const next = JSON.parse(JSON.stringify(prev)); // deep clone
-      const col_LA = SUBJECT_KEYS.indexOf("LA");
-      const col_MA = SUBJECT_KEYS.indexOf("MA");
-      const col_SC = SUBJECT_KEYS.indexOf("SC");
-      // Simulate failing core subjects in the bad year
-      [col_LA, col_MA, col_SC].forEach(col => {
-        if (col >= 0) {
-          next[badYear][col].grades[0] = "F";
-          next[badYear][col].grades[1] = "F";
-        }
-      });
-      // Add recovery entries
-      [col_LA, col_MA, col_SC].forEach(col => {
-        if (col >= 0) {
-          next["Recovery"][col].grades[0] = "CR";
-          next["Recovery"][col].grades[1] = "CR";
-        }
+      const next = JSON.parse(JSON.stringify(prev));
+      SUBJECT_KEYS.forEach((subj, col) => {
+        const maxSlots = SLOTS_PER_CELL(subj, level);
+        next[level][col].grades = Array(maxSlots).fill("");
       });
       return next;
     });
@@ -383,6 +468,9 @@ function App() {
     setGrid(emptyStackedGrid());
     setActiveCell(null);
   }, []);
+
+  // ── Scenario panel state ───────────────────────────────────────────────────
+  const [scenarioYear, setScenarioYear] = useState("9th");
 
   // ── Cell renderer ──────────────────────────────────────────────────────────
   const renderGradeSelector = (level, col) => {
@@ -572,37 +660,79 @@ function App() {
         )
       ),
 
-      // Quick-fill bar
-      e("div", { className: "quick-fill-bar" },
-        e("span", { className: "quick-fill-label" }, "Quick Fill:"),
-        ["A","B","C","D","F"].map(g =>
+      // Quick-fill panel
+      e("div", { className: "quick-fill-panel" },
+
+        // ── Row 1: Global fill (all years) ─────────────────────────────────
+        e("div", { className: "quick-fill-row" },
+          e("span", { className: "quick-fill-label" }, "All Years:"),
+          ["A","B","C","D","F"].map(g =>
+            e("button", {
+              key: g,
+              className: `quick-btn quick-btn-${g.toLowerCase()}`,
+              onClick: () => fillAll(g),
+              title: `Fill every year with ${g} (8.0 cr per year)`
+            }, `All ${g}`)
+          ),
           e("button", {
-            key: g,
-            className: `quick-btn quick-btn-${g.toLowerCase()}`,
-            onClick: () => fillAll(g),
-            title: `Fill all required slots with ${g}`
-          }, `All ${g}`)
+            className: "quick-btn quick-btn-random",
+            onClick: fillRandom,
+            title: "Fill all years with realistic weighted-random grades (8.0 cr/yr)"
+          }, "Random"),
+          e("div", { className: "quick-fill-sep" }),
+          e("button", { className: "quick-btn quick-btn-clear", onClick: clearAll, title: "Clear all grades" }, "Clear All")
         ),
-        e("button", { className: "quick-btn quick-btn-random", onClick: fillRandom, title: "Fill with realistic weighted-random grades" }, "Random"),
-        e("div", { className: "quick-fill-sep" }),
-        e("span", { className: "quick-fill-label" }, "Scenarios:"),
-        e("button", {
-          className: "quick-btn quick-btn-bad-year",
-          onClick: () => fillBadYear("9th"),
-          title: "Simulate failing core courses in 9th grade + credit recovery"
-        }, "Bad 9th + Recovery"),
-        e("button", {
-          className: "quick-btn quick-btn-bad-year",
-          onClick: () => fillBadYear("10th"),
-          title: "Simulate failing core courses in 10th grade + credit recovery"
-        }, "Bad 10th + Recovery"),
-        e("button", {
-          className: "quick-btn quick-btn-bad-year",
-          onClick: () => fillBadYear("11th"),
-          title: "Simulate failing core courses in 11th grade + credit recovery"
-        }, "Bad 11th + Recovery"),
-        e("div", { className: "quick-fill-sep" }),
-        e("button", { className: "quick-btn quick-btn-clear", onClick: clearAll }, "Clear All")
+
+        // ── Row 2: Per-year fill ────────────────────────────────────────────
+        e("div", { className: "quick-fill-row" },
+          e("span", { className: "quick-fill-label" }, "One Year:"),
+
+          // Year selector tabs
+          e("div", { className: "year-selector" },
+            ["9th","10th","11th","12th","Other"].map(yr =>
+              e("button", {
+                key: yr,
+                className: `year-tab ${scenarioYear === yr ? "year-tab-active" : ""}`,
+                onClick: () => setScenarioYear(yr)
+              }, yr)
+            )
+          ),
+
+          e("div", { className: "quick-fill-sep" }),
+
+          // Grade buttons for selected year
+          ["A","B","C","D","F"].map(g =>
+            e("button", {
+              key: g,
+              className: `quick-btn quick-btn-${g.toLowerCase()}`,
+              onClick: () => fillYearGrade(scenarioYear, g),
+              title: `Fill ${scenarioYear} grade with ${g} (8.0 cr = 32 slots)`
+            }, g)
+          ),
+          e("button", {
+            className: "quick-btn quick-btn-random",
+            onClick: () => fillYearRandom(scenarioYear),
+            title: `Fill ${scenarioYear} grade with random grades (8.0 cr)`
+          }, "Random"),
+          e("button", {
+            className: "quick-btn quick-btn-bad-year",
+            onClick: () => fillBadYear(scenarioYear),
+            title: `Simulate a bad ${scenarioYear} year: B in most courses, F in LA/MA/SC, CR recovery added`
+          }, `Bad Year + Recovery`),
+          e("div", { className: "quick-fill-sep" }),
+          e("button", {
+            className: "quick-btn quick-btn-clear",
+            onClick: () => clearYear(scenarioYear),
+            title: `Clear all grades for ${scenarioYear} only`
+          }, `Clear ${scenarioYear}`)
+        ),
+
+        // ── Row 3: Credit note ──────────────────────────────────────────────
+        e("div", { className: "quick-fill-note" },
+          "Per-year fill uses the standard Utah public school load of ",
+          e("strong", null, "8.0 credits per year"),
+          " (32 quarter-credit slots). Core subjects fill first; remaining slots go to electives."
+        )
       )
     );
   };
